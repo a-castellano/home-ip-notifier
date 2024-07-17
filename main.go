@@ -22,7 +22,7 @@ func sendEmail(config *config.Config, messageToSend string) error {
 	fromMail := fmt.Sprintf("%s@%s", config.MailFrom, config.MailDomain)
 	from := mail.Address{"", fromMail}
 	to := mail.Address{"", config.Destination}
-	subj := "Home IP haschanged"
+	subj := "Home IP has changed"
 
 	// Setup headers
 	headers := make(map[string]string)
