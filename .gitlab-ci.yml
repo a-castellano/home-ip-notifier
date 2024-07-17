@@ -1,0 +1,159 @@
+image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_22:202407020557
+
+stages:
+    - lint
+    - unit_tests
+    - integration_tests
+    - coverage
+    - report
+    - scan
+    - deploy
+
+lint_code:
+  stage: lint
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make lint
+
+race_detector:
+  stage: unit_tests
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make race
+
+
+memory_sanitizer:
+  stage: unit_tests
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make msan
+
+unit_tests:
+  stage: unit_tests
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make test
+
+
+integration_tests:
+  stage: integration_tests
+      #  services:
+      #    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202407020557
+      #      alias: rabbitmq
+      #    - name: registry.windmaker.net:5005/a-castellano/limani/base_redis_server:202407020557
+      #      alias: redis
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make test_integration
+
+coverage:
+  stage: coverage
+  only:
+    - develop
+    - master
+  services:
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_redis_server:202407020557
+      alias: redis
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202407020557
+      alias: rabbitmq
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - export REDIS_IP="172.17.0.2"
+  script:
+    - make coverage
+  coverage: /total:\s+.+\s(\d+\.\d+?)%$/
+  artifacts:
+    name: "coverage-$CI_PIPELINE_ID"
+    paths:
+      - cover
+    expire_in: 1 hour
+
+code_coverage_report:
+  stage: report
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make coverhtml
+  only:
+    - master
+  dependencies:
+    - coverage
+  artifacts:
+    name: "coverage-$CI_PIPELINE_ID"
+    paths:
+      - coverage.html
+      - cover
+    expire_in: 1 hour
+
+scan:
+  stage: scan
+  only:
+    - master
+  image: daedalusproject/base_sonar_scanner
+  before_script:
+    - rm -rf coverage.html
+  script:
+    - sonar-scanner -Dsonar.projectKey=home-ip-notifier -Dsonar.sources=. -Dsonar.host.url=https://sonarqube.windmaker.net -Dsonar.login=${SONAR_LOGIN} -Dsonar.exclusions="*/*_test.go" -Dsonar.go.coverage.reportPaths="cover/coverage.report"
+  dependencies:
+    - coverage
+
+pages:
+  stage: deploy
+  image: registry.windmaker.net:5005/a-castellano/limani/base:202407020557
+  script:
+    - mkdir -p public
+    - cp coverage.html public/
+  artifacts:
+    paths:
+    - public
+  only:
+    - master
+  dependencies:
+    - code_coverage_report
