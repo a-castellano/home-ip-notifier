@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ type Config struct {
 	SMTPName       string
 	SMTPPassword   string
 	Destination    string
+	NotifyQueue    string
 	RabbitmqConfig *rabbitmqconfig.Config
 }
 
@@ -53,6 +55,8 @@ func NewConfig() (*Config, error) {
 	if rabbitmqConfigErr != nil {
 		return nil, rabbitmqConfigErr
 	}
+
+	config.NotifyQueue = cmp.Or(os.Getenv("NOTIFY_QUEUE_NAME"), "home-ip-monitor-notifications")
 
 	return &config, nil
 }
