@@ -28,7 +28,7 @@ func NewConfig() (*Config, error) {
 	config := Config{}
 
 	// check if all required env variables are defined
-	requiredEnvVariables := []string{"MailFrom", "MailDomain", "SMTPHost", "SMTPPort", "SMTPName", "SMTPPassword", "Destination"}
+	requiredEnvVariables := []string{"MAILFROM", "MAILDOMAIN", "SMTPHOST", "SMTPPORT", "SMTPNAME", "SMTPPASSWORD", "DESTINATION"}
 
 	for _, requiredEnvVariable := range requiredEnvVariables {
 		if _, envVariableFound := os.LookupEnv(requiredEnvVariable); !envVariableFound {
@@ -37,18 +37,18 @@ func NewConfig() (*Config, error) {
 		}
 	}
 	var portAtoiErr error
-	config.SMTPPort, portAtoiErr = strconv.Atoi(os.Getenv("SMTPPort"))
+	config.SMTPPort, portAtoiErr = strconv.Atoi(os.Getenv("SMTPPORT"))
 
 	if portAtoiErr != nil {
-		return nil, errors.New("Failed to parse SMTPPort value")
+		return nil, errors.New("Failed to parse SMTPPORT value")
 	}
 
-	config.MailFrom = os.Getenv("MailFrom")
-	config.MailDomain = os.Getenv("MailDomain")
-	config.SMTPHost = os.Getenv("SMTPHost")
-	config.SMTPName = os.Getenv("SMTPName")
-	config.SMTPPassword = os.Getenv("SMTPPassword")
-	config.Destination = os.Getenv("Destination")
+	config.MailFrom = os.Getenv("MAILFROM")
+	config.MailDomain = os.Getenv("MAILDOMAIN")
+	config.SMTPHost = os.Getenv("SMTPHOST")
+	config.SMTPName = os.Getenv("SMTPNAME")
+	config.SMTPPassword = os.Getenv("SMTPPASSWORD")
+	config.Destination = os.Getenv("DESTINATION")
 
 	var rabbitmqConfigErr error
 	config.RabbitmqConfig, rabbitmqConfigErr = rabbitmqconfig.NewConfig()
