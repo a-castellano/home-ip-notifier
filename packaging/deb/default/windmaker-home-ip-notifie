@@ -1,0 +1,25 @@
+# windmaker-home-ip-notifier
+#
+# Required env variables
+# Check Docs:
+# https://git.windmaker.net/a-castellano/home-ip-notifier
+#
+
+NOTIFY_QUEUE_NAME="home-ip-monitor-notifications"
+
+# Mail config
+
+MAILFROM="no-reply"
+MAILDOMAIN="example.net"
+SMTPHOST="email-smtp.eu-west-1.amazonaws.com"
+SMTPPORT="465"
+SMTPNAME="name"
+SMTPPASSWORD="pass"
+DESTINATION="alvaro.castellano.vela@gmail.com"
+
+# RabbitMQ config
+
+RABBITMQ_HOST="localhost"
+RABBITMQ_PORT=5672
+RABBITMQ_USER="guest"
+RABBITMQ_PASSWORD="guest"
