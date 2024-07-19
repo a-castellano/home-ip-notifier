@@ -8,6 +8,7 @@ stages:
     - report
     - scan
     - deploy
+    - build
 
 lint_code:
   stage: lint
@@ -157,3 +158,28 @@ pages:
     - master
   dependencies:
     - code_coverage_report
+
+build_package:
+  stage: build
+  before_script:
+    - export CC=/usr/bin/clang
+    - export GOPATH="$(pwd)/go"
+    - mkdir -p "$(pwd)/go"
+    - go env -w GOPATH="$(pwd)/go"
+    - mkdir -p $GOPATH/src/github.com/a-castellano
+    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+  script:
+    - make build
+    - nfpm package --packager deb
+    - mkdir deb_package
+    - mv *.deb deb_package/
+  dependencies:
+    - coverage
+  artifacts:
+    name: "coverage-$CI_PIPELINE_ID"
+    paths:
+      - deb_package
+    expire_in: 1 hour
+  only:
+    - master

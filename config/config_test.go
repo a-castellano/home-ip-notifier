@@ -42,28 +42,28 @@ var currentRabbitmqPasswordDefined bool
 
 func setUp() {
 
-	if envMailFrom, found := os.LookupEnv("MailFrom"); found {
+	if envMailFrom, found := os.LookupEnv("MAILFROM"); found {
 		currentMailFrom = envMailFrom
 		currentMailFromDefined = true
 	} else {
 		currentMailFromDefined = false
 	}
 
-	if envMailDomain, found := os.LookupEnv("MailDomain"); found {
+	if envMailDomain, found := os.LookupEnv("MAILDOMAIN"); found {
 		currentMailDomain = envMailDomain
 		currentMailDomainDefined = true
 	} else {
 		currentMailDomainDefined = false
 	}
 
-	if envSMTPHost, found := os.LookupEnv("SMTPHost"); found {
+	if envSMTPHost, found := os.LookupEnv("SMTPHOST"); found {
 		currentSMTPHost = envSMTPHost
 		currentSMTPHostDefined = true
 	} else {
 		currentSMTPHostDefined = false
 	}
 
-	if envSMTPPort, found := os.LookupEnv("SMTPPort"); found {
+	if envSMTPPort, found := os.LookupEnv("SMTPPORT"); found {
 		currentSMTPPort = envSMTPPort
 		currentSMTPPortDefined = true
 	} else {
@@ -77,27 +77,27 @@ func setUp() {
 		currentSMTPNameDefined = false
 	}
 
-	if envSMTPPassword, found := os.LookupEnv("SMTPPassword"); found {
+	if envSMTPPassword, found := os.LookupEnv("SMTPPASSWORD"); found {
 		currentSMTPPassword = envSMTPPassword
 		currentSMTPPasswordDefined = true
 	} else {
 		currentSMTPPasswordDefined = false
 	}
 
-	if envDestination, found := os.LookupEnv("Destination"); found {
+	if envDestination, found := os.LookupEnv("DESTINATION"); found {
 		currentDestination = envDestination
 		currentDestinationDefined = true
 	} else {
 		currentDestinationDefined = false
 	}
 
-	os.Unsetenv("MailFrom")
-	os.Unsetenv("MailDomain")
-	os.Unsetenv("SMTPHost")
-	os.Unsetenv("SMTPPort")
+	os.Unsetenv("MAILFROM")
+	os.Unsetenv("MAILDOMAIN")
+	os.Unsetenv("SMTPHOST")
+	os.Unsetenv("SMTPPORT")
 	os.Unsetenv("SMTPName")
-	os.Unsetenv("SMTPPassword")
-	os.Unsetenv("Destination")
+	os.Unsetenv("SMTPPASSWORD")
+	os.Unsetenv("DESTINATION")
 
 	os.Unsetenv("RABBITMQ_HOST")
 	os.Unsetenv("RABBITMQ_PORT")
@@ -108,27 +108,27 @@ func setUp() {
 func teardown() {
 
 	if currentMailFromDefined {
-		os.Setenv("MailFrom", currentMailFrom)
+		os.Setenv("MAILFROM", currentMailFrom)
 	} else {
-		os.Unsetenv("MailFrom")
+		os.Unsetenv("MAILFROM")
 	}
 
 	if currentMailDomainDefined {
-		os.Setenv("MailDomain", currentMailDomain)
+		os.Setenv("MAILDOMAIN", currentMailDomain)
 	} else {
-		os.Unsetenv("MailDomain")
+		os.Unsetenv("MAILDOMAIN")
 	}
 
 	if currentSMTPHostDefined {
-		os.Setenv("SMTPHost", currentSMTPHost)
+		os.Setenv("SMTPHOST", currentSMTPHost)
 	} else {
-		os.Unsetenv("SMTPHost")
+		os.Unsetenv("SMTPHOST")
 	}
 
 	if currentSMTPPortDefined {
-		os.Setenv("SMTPPort", currentSMTPPort)
+		os.Setenv("SMTPPORT", currentSMTPPort)
 	} else {
-		os.Unsetenv("SMTPPort")
+		os.Unsetenv("SMTPPORT")
 	}
 
 	if currentSMTPNameDefined {
@@ -138,15 +138,15 @@ func teardown() {
 	}
 
 	if currentSMTPPasswordDefined {
-		os.Setenv("SMTPPassword", currentSMTPPassword)
+		os.Setenv("SMTPPASSWORD", currentSMTPPassword)
 	} else {
-		os.Unsetenv("SMTPPassword")
+		os.Unsetenv("SMTPPASSWORD")
 	}
 
 	if currentDestinationDefined {
-		os.Setenv("Destination", currentDestination)
+		os.Setenv("DESTINATION", currentDestination)
 	} else {
-		os.Unsetenv("Destination")
+		os.Unsetenv("DESTINATION")
 	}
 
 	if currentRabbitmqHostDefined {
@@ -184,8 +184,8 @@ func TestConfigWithoutEnvVariables(t *testing.T) {
 	if err == nil {
 		t.Errorf("TestConfigWithoutEnvVariables should fail.")
 	} else {
-		if err.Error() != "MailFrom env variable must be set" {
-			t.Errorf("TestConfigWithoutEnvVariables error should be \"MailFrom env variable must be set\" but it was \"%s\".", err.Error())
+		if err.Error() != "MAILFROM env variable must be set" {
+			t.Errorf("TestConfigWithoutEnvVariables error should be \"MAILFROM env variable must be set\" but it was \"%s\".", err.Error())
 		}
 	}
 }
@@ -195,21 +195,21 @@ func TestConfigWithInvalidSMTPPort(t *testing.T) {
 	setUp()
 	defer teardown()
 
-	os.Setenv("MailFrom", "test")
-	os.Setenv("MailDomain", "test")
-	os.Setenv("SMTPHost", "test")
-	os.Setenv("SMTPPort", "invalid")
-	os.Setenv("SMTPName", "test")
-	os.Setenv("SMTPPassword", "test")
-	os.Setenv("Destination", "test")
+	os.Setenv("MAILFROM", "test")
+	os.Setenv("MAILDOMAIN", "test")
+	os.Setenv("SMTPHOST", "test")
+	os.Setenv("SMTPPORT", "invalid")
+	os.Setenv("SMTPNAME", "test")
+	os.Setenv("SMTPPASSWORD", "test")
+	os.Setenv("DESTINATION", "test")
 
 	_, err := NewConfig()
 
 	if err == nil {
-		t.Errorf("TestConfigWithInvalidSMTPPort should fail.")
+		t.Errorf("TestConfigWithInvalidSMTPPORT should fail.")
 	} else {
-		if err.Error() != "Failed to parse SMTPPort value" {
-			t.Errorf("TestConfigWithInvalidSMTPPort error should be \"Failed to parse SMTPPort value\" but it was \"%s\".", err.Error())
+		if err.Error() != "Failed to parse SMTPPORT value" {
+			t.Errorf("TestConfigWithInvalidSMTPPort error should be \"Failed to parse SMTPPORT value\" but it was \"%s\".", err.Error())
 		}
 	}
 }
@@ -219,13 +219,13 @@ func TestConfigWithInvalidRabbitMQPort(t *testing.T) {
 	setUp()
 	defer teardown()
 
-	os.Setenv("MailFrom", "test")
-	os.Setenv("MailDomain", "test")
-	os.Setenv("SMTPHost", "test")
-	os.Setenv("SMTPPort", "25")
+	os.Setenv("MAILFROM", "test")
+	os.Setenv("MAILDOMAIN", "test")
+	os.Setenv("SMTPHOST", "test")
+	os.Setenv("SMTPPORT", "25")
 	os.Setenv("SMTPName", "test")
-	os.Setenv("SMTPPassword", "test")
-	os.Setenv("Destination", "test")
+	os.Setenv("SMTPPASSWORD", "test")
+	os.Setenv("DESTINATION", "test")
 	os.Setenv("RABBITMQ_PORT", "invalid")
 
 	_, err := NewConfig()
