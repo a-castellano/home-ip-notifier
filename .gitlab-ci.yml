@@ -1,14 +1,15 @@
-image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_22:202407020557
+image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_22:202412301859
 
 stages:
-    - lint
-    - unit_tests
-    - integration_tests
-    - coverage
-    - report
-    - scan
-    - deploy
-    - build
+  - lint
+  - unit_tests
+  - integration_tests
+  - coverage
+  - report
+  - sonarqube-check
+  - sonarqube-vulnerability-report
+  - deploy
+  - build
 
 lint_code:
   stage: lint
@@ -36,7 +37,6 @@ race_detector:
   script:
     - make race
 
-
 memory_sanitizer:
   stage: unit_tests
   before_script:
@@ -63,14 +63,8 @@ unit_tests:
   script:
     - make test
 
-
 integration_tests:
   stage: integration_tests
-      #  services:
-      #    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202407020557
-      #      alias: rabbitmq
-      #    - name: registry.windmaker.net:5005/a-castellano/limani/base_redis_server:202407020557
-      #      alias: redis
   before_script:
     - export CC=/usr/bin/clang
     - export GOPATH="$(pwd)/go"
@@ -84,13 +78,14 @@ integration_tests:
 
 coverage:
   stage: coverage
-  only:
-    - develop
-    - master
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_redis_server:202407020557
-      alias: redis
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202407020557
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202412301859
       alias: rabbitmq
   before_script:
     - export CC=/usr/bin/clang
@@ -100,7 +95,6 @@ coverage:
     - mkdir -p $GOPATH/src/github.com/a-castellano
     - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
     - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - export REDIS_IP="172.17.0.2"
   script:
     - make coverage
   coverage: /total:\s+.+\s(\d+\.\d+?)%$/
@@ -122,8 +116,10 @@ code_coverage_report:
     - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
   script:
     - make coverhtml
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   dependencies:
     - coverage
   artifacts:
@@ -133,29 +129,63 @@ code_coverage_report:
       - cover
     expire_in: 1 hour
 
-scan:
-  stage: scan
-  only:
-    - master
-  image: daedalusproject/base_sonar_scanner
-  before_script:
-    - rm -rf coverage.html
+sonarqube-check:
+  stage: sonarqube-check
+  image:
+    name: sonarsource/sonar-scanner-cli:11
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
+    GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
   script:
-    - sonar-scanner -Dsonar.projectKey=home-ip-notifier -Dsonar.sources=. -Dsonar.host.url=https://sonarqube.windmaker.net -Dsonar.login=${SONAR_LOGIN} -Dsonar.exclusions="*/*_test.go" -Dsonar.go.coverage.reportPaths="cover/coverage.report"
+    - sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL}"
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
+  dependencies:
+    - coverage
+
+sonarqube-vulnerability-report:
+  stage: sonarqube-vulnerability-report
+  image:
+    name: sonarsource/sonar-scanner-cli:11
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
+    GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
+  script:
+    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=a-castellano_home-ip-monitor_a0d9946c-4181-4181-af10-e5dac69d0658&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
+  artifacts:
+    expire_in: 1 day
+    reports:
+      sast: gl-sast-sonar-report.json
   dependencies:
     - coverage
 
 pages:
   stage: deploy
-  image: registry.windmaker.net:5005/a-castellano/limani/base:202407020557
+  image: registry.windmaker.net:5005/a-castellano/limani/base:202412301859
   script:
     - mkdir -p public
     - cp coverage.html public/
   artifacts:
     paths:
-    - public
-  only:
-    - master
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   dependencies:
     - code_coverage_report
 
@@ -181,5 +211,7 @@ build_package:
     paths:
       - deb_package
     expire_in: 1 hour
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
