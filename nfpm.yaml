@@ -1,25 +1,25 @@
 name: "windmaker-home-ip-notifier"
 arch: "amd64"
 platform: "linux"
-version: "v0.0.1"
+version: "v0.0.2"
 section: "default"
 priority: "extra"
 provides:
-- secutiycambot
+  - windmaker-home-ip-notifier
 maintainer: "Álvaro Castellano Vela <alvaro.castellano.vela@gmail.com>"
 description: |
-  This program updates home domain IP
+  This program notifies about home domain IP changes
 vendor: "Windmaker"
 homepage: "https://git.windmaker.net/a-castellano/home-ip-notifier"
 license: "GPLV3"
 changelog: "changelog.yaml"
 contents:
-- src: ./home-ip-notifier
-  dst: /usr/local/bin/windmaker-home-ip-notifier
-- src: ./packaging/deb/default/windmaker-home-ip-notifier
-  dst: /etc/default/windmaker-home-ip-notifier
-- src: ./packaging/deb/systemd/windmaker-home-ip-notifier.service
-  dst: /usr/lib/systemd/system/windmaker-home-ip-notifier.service
+  - src: ./home-ip-notifier
+    dst: /usr/local/bin/windmaker-home-ip-notifier
+  - src: ./packaging/deb/default/windmaker-home-ip-notifier
+    dst: /etc/default/windmaker-home-ip-notifier
+  - src: ./packaging/deb/systemd/windmaker-home-ip-notifier.service
+    dst: /usr/lib/systemd/system/windmaker-home-ip-notifier.service
 overrides:
   deb:
     scripts:
