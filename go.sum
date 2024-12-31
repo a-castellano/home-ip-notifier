@@ -2,5 +2,7 @@ github.com/a-castellano/go-services v0.0.5 h1:27Dirc6k+IOGj83mvXFOEgXSTSM2Bvj84G
 github.com/a-castellano/go-services v0.0.5/go.mod h1:LLIcel6fJFRa+O3Dhou+YeDV6t5A1cncsq2YKu5+Vls=
 github.com/a-castellano/go-types v0.0.1 h1:vD4DOuQgMUIE1eDQJ/zww81MWOVZgb3SBrgsPk/zLns=
 github.com/a-castellano/go-types v0.0.1/go.mod h1:VWPCDtrt/sTi8DS6N3FF/5pcVkv0/3YR0Oyg+Y/LOn4=
+github.com/a-castellano/go-types v0.0.2 h1:Cf7bQ1oIfeqviT846HstlNobc8ntIy/CFos+LEC2ydc=
+github.com/a-castellano/go-types v0.0.2/go.mod h1:CSXpfVMvMnqGvyMf9P6HrGl2xrPtvTN3WHiqy6BECiw=
 github.com/rabbitmq/amqp091-go v1.10.0 h1:STpn5XsHlHGcecLmMFCtg7mqq0RnD+zFr4uzukfVhBw=
 github.com/rabbitmq/amqp091-go v1.10.0/go.mod h1:Hy4jKW5kQART1u+JkDTF9YYOQUHXqMuhrgxOEeS7G4o=
