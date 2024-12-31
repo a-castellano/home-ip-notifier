@@ -1,43 +1,31 @@
 # Home IP Notifier
 
-This program is suscribed to [home-ip-monitor](https://git.windmaker.net/a-castellano/home-ip-monitor) notify queue, it will update required DNS record with reases IP's from queue.
+[![pipeline status](https://git.windmaker.net/a-castellano/home-ip-notifier/badges/master/pipeline.svg)](https://git.windmaker.net/a-castellano/home-ip-notifier/pipelines)[![coverage report](https://git.windmaker.net/a-castellano/home-ip-notifier/badges/master/coverage.svg)](https://a-castellano.gitpages.windmaker.net/home-ip-notifier/coverage.html)[![Quality Gate Status](https://sonarqube.windmaker.net/api/project_badges/measure?project=a-castellano_home-ip-notifier_c4da9a70-dcc5-4ef5-8425-3f91b0d7526d&metric=alert_status&token=sqb_efd83d3e4b6a20b336f469385f469e63fdab1fc3)](https://sonarqube.windmaker.net/dashboard?id=a-castellano_home-ip-notifier_c4da9a70-dcc5-4ef5-8425-3f91b0d7526d)
+
+This program is suscribed to [home-ip-monitor](https://git.windmaker.net/a-castellano/home-ip-monitor) notify queue, it will notify about IP changes by e-mail.
 
 # What this progam does?
 
-Reads IP's from configured queue and updated reqired DNS record.
+Reads IP's from configured queue and nofies it by e-mail.
 
 # Required variables
 
 ## Queue names
 
-**UPDATE_QUEUE_NAME**: Queue name where new IP's will be sended.
+**NOTIFY_QUEUE_NAME**: Queue name where IP will be sended.
 
-## AWS Config
+## Mail Config
 
-DNS service is hosted in AWS Route53 service, AWS auth and Route53 keys are required:
+The following mail config env variables are required:
 
-**AWS_ACCESS_KEY_ID**: AWS account key
-**AWS_SECRET_ACCESS_KEY**: AWS account secret key
-**AWS_REGION**: AWS region, default value is "us-west-2"
-**AWS_ZONE_ID**: Route53 zone ID
-**SUBDOMAIN**: Subdomain record to update
-
-In this case, an user with limited permissions is created with the following policy:
-```
-"Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": [
-                "route53:ChangeResourceRecordSets",
-                "route53:ListResourceRecordSets"
-            ],
-            "Resource": "arn:aws:route53:::hostedzone/AWS_ZONE_ID"
-        }
-    ]
-}
-```
+- **MailFrom**
+- **MailDomain**
+- **SMTPHost**
+- **SMTPPort**
+- **SMTPName**
+- **SMTPPassword**
+- **Destination**
+- **NotifyQueue**
 
 ## RabbitMQ Config
 
