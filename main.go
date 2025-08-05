@@ -20,8 +20,8 @@ import (
 func sendEmail(config *config.Config, messageToSend string) error {
 
 	fromMail := fmt.Sprintf("%s@%s", config.MailFrom, config.MailDomain)
-	from := mail.Address{"", fromMail}
-	to := mail.Address{"", config.Destination}
+	from := mail.Address{Name: "", Address: fromMail}
+	to := mail.Address{Name: "", Address: config.Destination}
 	subj := "Home IP has changed"
 
 	// Setup headers
@@ -122,7 +122,7 @@ func main() {
 	log.Print("Creating RabbitMQ client")
 	ctx, cancel := context.WithCancel(context.Background())
 
-	rabbitmqClient := messagebroker.NewRabbimqClient(appConfig.RabbitmqConfig)
+	rabbitmqClient := messagebroker.NewRabbitmqClient(appConfig.RabbitmqConfig)
 	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
 
 	messagesReceived := make(chan []byte)

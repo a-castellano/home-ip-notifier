@@ -1,4 +1,4 @@
-image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_22:202412301859
+image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202507280511
 
 stages:
   - lint
@@ -11,55 +11,31 @@ stages:
   - deploy
   - build
 
+.install_mod: &install_mod
+  - mkdir -p /root/go/pkg
+  - mv mod /root/go/pkg/
+
 lint_code:
   stage: lint
+  rules:
+    - when: always
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
   script:
     - make lint
-
-race_detector:
-  stage: unit_tests
-  before_script:
-    - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
-  script:
-    - make race
-
-memory_sanitizer:
-  stage: unit_tests
-  before_script:
-    - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
-  script:
-    - make msan
+    - ls -l /root/go/pkg/mod/
+    - mv /root/go/pkg/mod ./
+  artifacts:
+    name: "lint-$CI_PIPELINE_ID"
+    paths:
+      - mod
+    expire_in: 1 hour
 
 unit_tests:
   stage: unit_tests
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - *install_mod
   script:
     - make test
 
@@ -67,12 +43,7 @@ integration_tests:
   stage: integration_tests
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - *install_mod
   script:
     - make test_integration
 
@@ -85,35 +56,27 @@ coverage:
     - if: $CI_COMMIT_BRANCH == 'develop'
     - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202412301859
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202507280511
       alias: rabbitmq
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - *install_mod
   script:
     - make coverage
+    - mv /root/go/pkg/mod ./
   coverage: /total:\s+.+\s(\d+\.\d+?)%$/
   artifacts:
     name: "coverage-$CI_PIPELINE_ID"
     paths:
       - cover
+      - mod
     expire_in: 1 hour
 
 code_coverage_report:
   stage: report
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - *install_mod
   script:
     - make coverhtml
   rules:
@@ -175,7 +138,7 @@ sonarqube-vulnerability-report:
 
 pages:
   stage: deploy
-  image: registry.windmaker.net:5005/a-castellano/limani/base:202412301859
+  image: registry.windmaker.net:5005/a-castellano/limani/base:202507280511
   script:
     - mkdir -p public
     - cp coverage.html public/
@@ -193,23 +156,18 @@ build_package:
   stage: build
   before_script:
     - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/home-ip-notifier
-    - cd $GOPATH/src/github.com/a-castellano/home-ip-notifier
+    - *install_mod
   script:
     - make build
-    - nfpm package --packager deb
-    - mkdir deb_package
-    - mv *.deb deb_package/
+    - nfpm package --packager archlinux
+    - mkdir arch_package
+    - mv *.pkg.tar.zst arch_package/
   dependencies:
     - coverage
   artifacts:
     name: "coverage-$CI_PIPELINE_ID"
     paths:
-      - deb_package
+      - arch_package
     expire_in: 1 hour
   rules:
     - if: $CI_COMMIT_BRANCH == 'master'

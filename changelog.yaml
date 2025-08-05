@@ -1,3 +1,12 @@
+- semver: 0.0.3
+  date: 2025-08-05T10:16:00+01:00
+  packager: Álvaro Castellano Vela <alvaro@windmaker.net>
+  changes:
+    - note: |-
+        Update to golang 1.24
+      author:
+        name: Álvaro Castellano Vela
+        email: alvaro@windmaker.net
 - semver: 0.0.2
   date: 2024-12-31T10:16:00+01:00
   packager: Álvaro Castellano Vela <alvaro.castellano.vela@gmail>
