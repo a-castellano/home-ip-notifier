@@ -234,3 +234,24 @@ func TestConfigWithInvalidRabbitMQPort(t *testing.T) {
 		t.Errorf("TestConfigWithInvalidSMTPPort should fail with invalid RABBITMQ_PORT.")
 	}
 }
+
+func TestConfigWithValidRabbitMQPort(t *testing.T) {
+
+	setUp()
+	defer teardown()
+
+	os.Setenv("MAILFROM", "test")
+	os.Setenv("MAILDOMAIN", "test")
+	os.Setenv("SMTPHOST", "test")
+	os.Setenv("SMTPPORT", "25")
+	os.Setenv("SMTPName", "test")
+	os.Setenv("SMTPPASSWORD", "test")
+	os.Setenv("DESTINATION", "test")
+	os.Setenv("RABBITMQ_PORT", "5672")
+
+	_, err := NewConfig()
+
+	if err != nil {
+		t.Errorf("TestConfigWithValidRabbitMQPort should not fail, error: %s", err.Error())
+	}
+}
