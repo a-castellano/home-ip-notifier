@@ -59,8 +59,9 @@ integration_tests:
         STUNNEL_CONNECT: mailhog:1025
         STUNNEL_PROTO: smtp
       command:
-        - /usr/bin/sleep 10
-        - /usr/local/bin/run_stunnel.sh
+        - /bin/sh
+        - -c
+        - "sleep 10 && /usr/local/bin/run_stunnel.sh"
 coverage:
   stage: coverage
   rules:
@@ -82,8 +83,9 @@ coverage:
         STUNNEL_CONNECT: mailhog:1025
         STUNNEL_PROTO: smtp
       command:
-        - /usr/bin/sleep
-        - /usr/local/bin/run_stunnel.sh
+        - /bin/sh
+        - -c
+        - "sleep 10 && /usr/local/bin/run_stunnel.sh"
 
   before_script:
     - export CC=/usr/bin/clang
