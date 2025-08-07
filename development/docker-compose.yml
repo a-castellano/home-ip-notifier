@@ -42,6 +42,7 @@ services:
       STUNNEL_ACCEPT: 6465
       STUNNEL_CONNECT: mailhog:1025
       STUNNEL_PROTO: smtp
+    command: sleep 10 && /usr/local/bin/run_stunnel.sh"
     networks:
       home-ip-notifier-net:
         ipv4_address: 172.17.0.50
