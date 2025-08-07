@@ -59,7 +59,7 @@ integration_tests:
         STUNNEL_CONNECT: mailhog:1025
         STUNNEL_PROTO: smtp
       command:
-        - sleep 10
+        - /usr/bin/sleep 10
         - /usr/local/bin/run_stunnel.sh
 coverage:
   stage: coverage
@@ -82,7 +82,7 @@ coverage:
         STUNNEL_CONNECT: mailhog:1025
         STUNNEL_PROTO: smtp
       command:
-        - sleep 10
+        - /usr/bin/sleep
         - /usr/local/bin/run_stunnel.sh
 
   before_script:
