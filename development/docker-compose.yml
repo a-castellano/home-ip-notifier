@@ -33,6 +33,19 @@ services:
       home-ip-notifier-net:
         ipv4_address: 172.17.0.40
 
+  stunnel:
+    image: registry.windmaker.net:5005/a-castellano/limani/base_stunnel
+    ports:
+      - "6465:6465"
+    environment:
+      STUNNEL_SERVICE: smtp-mailhog
+      STUNNEL_ACCEPT: 6465
+      STUNNEL_CONNECT: mailhog:1025
+      STUNNEL_PROTO: smtp
+    networks:
+      home-ip-notifier-net:
+        ipv4_address: 172.17.0.50
+
 # Custom network configuration for service communication
 networks:
   home-ip-notifier-net:
