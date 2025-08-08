@@ -1,4 +1,4 @@
-image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202508071757
+image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202508080558
 
 stages:
   - lint
@@ -48,21 +48,13 @@ integration_tests:
     - sleep 20
     - make test_integration
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508071757
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
       alias: rabbitmq
-    - name: docker.io/mailhog/mailhog:latest
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
       alias: mailhog
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_stunnel:202508071757
-      alias: stunnel
       variables:
         STUNNEL_SERVICE: smtp-mailhog
         STUNNEL_ACCEPT: 6465
-        STUNNEL_CONNECT: mailhog:1025
-        STUNNEL_PROTO: smtp
-      command:
-        - /bin/sh
-        - -c
-        - "sleep 10 && /usr/local/bin/run_stunnel.sh"
 coverage:
   stage: coverage
   rules:
@@ -72,21 +64,13 @@ coverage:
     - if: $CI_COMMIT_BRANCH == 'develop'
     - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508071757
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
       alias: rabbitmq
-    - name: docker.io/mailhog/mailhog:latest
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
       alias: mailhog
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_stunnel:202508071757
-      alias: stunnel
       variables:
         STUNNEL_SERVICE: smtp-mailhog
         STUNNEL_ACCEPT: 6465
-        STUNNEL_CONNECT: mailhog:1025
-        STUNNEL_PROTO: smtp
-      command:
-        - /bin/sh
-        - -c
-        - "sleep 10 && /usr/local/bin/run_stunnel.sh"
 
   before_script:
     - export CC=/usr/bin/clang
@@ -168,7 +152,7 @@ sonarqube-vulnerability-report:
 
 pages:
   stage: deploy
-  image: registry.windmaker.net:5005/a-castellano/limani/base:202508071757
+  image: registry.windmaker.net:5005/a-castellano/limani/base:202508080558
   script:
     - mkdir -p public
     - cp coverage.html public/

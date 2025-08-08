@@ -37,8 +37,10 @@ RabbitMQ required config can be found in its [go types](https://git.windmaker.ne
 
 Install swaks
 
+```bash
 swaks --to test@windmaker.com \
- --server stunnel:6465 \
+ --server mailhog:6465 \
  --tls \
  --header "Subject: Test using swaks via stunnel" \
  --body "This is a test"
+```
