@@ -1,7 +1,7 @@
 name: "windmaker-home-ip-notifier"
-arch: "amd64"
+arch: "armv7l"
 platform: "linux"
-version: "v0.0.2"
+version: "v0.0.3"
 section: "default"
 priority: "extra"
 provides:

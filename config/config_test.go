@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+// Global variables to store original environment variable values
+// These are used to restore the environment after tests
 var currentMailFrom string
 var currentMailFromDefined bool
 
@@ -40,6 +42,8 @@ var currentRabbitmqUserDefined bool
 var currentRabbitmqPassword string
 var currentRabbitmqPasswordDefined bool
 
+// setUp saves the current environment variables and clears them for testing
+// This ensures tests start with a clean environment state
 func setUp() {
 
 	if envMailFrom, found := os.LookupEnv("MAILFROM"); found {
@@ -91,6 +95,7 @@ func setUp() {
 		currentDestinationDefined = false
 	}
 
+	// Clear all environment variables to ensure clean test state
 	os.Unsetenv("MAILFROM")
 	os.Unsetenv("MAILDOMAIN")
 	os.Unsetenv("SMTPHOST")
@@ -105,6 +110,8 @@ func setUp() {
 	os.Unsetenv("RABBITMQ_PASSWORD")
 }
 
+// teardown restores the original environment variables after tests
+// This ensures tests don't affect the system environment
 func teardown() {
 
 	if currentMailFromDefined {
@@ -174,6 +181,8 @@ func teardown() {
 	}
 }
 
+// TestConfigWithoutEnvVariables tests that NewConfig fails when required environment variables are missing
+// This ensures the application properly validates configuration requirements
 func TestConfigWithoutEnvVariables(t *testing.T) {
 
 	setUp()
@@ -190,11 +199,14 @@ func TestConfigWithoutEnvVariables(t *testing.T) {
 	}
 }
 
+// TestConfigWithInvalidSMTPPort tests that NewConfig fails when SMTPPORT is not a valid integer
+// This ensures proper validation of numeric configuration values
 func TestConfigWithInvalidSMTPPort(t *testing.T) {
 
 	setUp()
 	defer teardown()
 
+	// Set all required variables but with invalid SMTP port
 	os.Setenv("MAILFROM", "test")
 	os.Setenv("MAILDOMAIN", "test")
 	os.Setenv("SMTPHOST", "test")
@@ -214,11 +226,14 @@ func TestConfigWithInvalidSMTPPort(t *testing.T) {
 	}
 }
 
+// TestConfigWithInvalidRabbitMQPort tests that NewConfig fails when RABBITMQ_PORT is not a valid integer
+// This ensures RabbitMQ configuration validation works correctly
 func TestConfigWithInvalidRabbitMQPort(t *testing.T) {
 
 	setUp()
 	defer teardown()
 
+	// Set all required variables but with invalid RabbitMQ port
 	os.Setenv("MAILFROM", "test")
 	os.Setenv("MAILDOMAIN", "test")
 	os.Setenv("SMTPHOST", "test")
@@ -232,5 +247,29 @@ func TestConfigWithInvalidRabbitMQPort(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("TestConfigWithInvalidSMTPPort should fail with invalid RABBITMQ_PORT.")
+	}
+}
+
+// TestConfigWithValidRabbitMQPort tests that NewConfig succeeds with valid RabbitMQ configuration
+// This ensures the configuration system works correctly with valid inputs
+func TestConfigWithValidRabbitMQPort(t *testing.T) {
+
+	setUp()
+	defer teardown()
+
+	// Set all required variables with valid values
+	os.Setenv("MAILFROM", "test")
+	os.Setenv("MAILDOMAIN", "test")
+	os.Setenv("SMTPHOST", "test")
+	os.Setenv("SMTPPORT", "25")
+	os.Setenv("SMTPName", "test")
+	os.Setenv("SMTPPASSWORD", "test")
+	os.Setenv("DESTINATION", "test")
+	os.Setenv("RABBITMQ_PORT", "5672")
+
+	_, err := NewConfig()
+
+	if err != nil {
+		t.Errorf("TestConfigWithValidRabbitMQPort should not fail, error: %s", err.Error())
 	}
 }

@@ -2,135 +2,59 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
 	"log"
 	"log/syslog"
-	"net"
-	"net/mail"
-	"net/smtp"
 	"os"
 	"os/signal"
 	"syscall"
 
 	messagebroker "github.com/a-castellano/go-services/messagebroker"
 	config "github.com/a-castellano/home-ip-notifier/config"
+	mailutils "github.com/a-castellano/home-ip-notifier/mail"
 )
 
-func sendEmail(config *config.Config, messageToSend string) error {
-
-	fromMail := fmt.Sprintf("%s@%s", config.MailFrom, config.MailDomain)
-	from := mail.Address{"", fromMail}
-	to := mail.Address{"", config.Destination}
-	subj := "Home IP has changed"
-
-	// Setup headers
-	headers := make(map[string]string)
-	headers["From"] = from.String()
-	headers["To"] = to.String()
-	headers["Subject"] = subj
-
-	// Setup message
-	var message string
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n" + messageToSend
-
-	// Connect to the SMTP Server
-	servername := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
-
-	host, _, _ := net.SplitHostPort(servername)
-
-	auth := smtp.PlainAuth("", config.SMTPName, config.SMTPPassword, host)
-
-	// TLS config
-	tlsconfig := &tls.Config{
-		InsecureSkipVerify: true,
-		ServerName:         host,
-	}
-
-	// Here is the key, you need to call tls.Dial instead of smtp.Dial
-	// for smtp servers running on 465 that require an ssl connection
-	// from the very beginning (no starttls)
-	conn, err := tls.Dial("tcp", servername, tlsconfig)
-	if err != nil {
-		return err
-	}
-
-	c, err := smtp.NewClient(conn, host)
-	if err != nil {
-		return err
-	}
-
-	// Auth
-	if err = c.Auth(auth); err != nil {
-		return err
-	}
-
-	// To && From
-	if err = c.Mail(from.Address); err != nil {
-		return err
-	}
-
-	if err = c.Rcpt(to.Address); err != nil {
-		return err
-	}
-
-	// Data
-	w, err := c.Data()
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write([]byte(message))
-	if err != nil {
-		return err
-	}
-
-	err = w.Close()
-	if err != nil {
-		return err
-	}
-
-	c.Quit()
-	log.Println("Mail sent successfully")
-
-	return nil
-}
-
+// main is the entry point of the application.
+// It sets up logging, configuration, RabbitMQ connection, and starts the message processing loop.
 func main() {
 
-	// Configure logger to write to the syslog.
+	// Configure logger to write to the syslog for better system integration
 	logwriter, e := syslog.New(syslog.LOG_INFO, "home-ip-notifier")
 	if e == nil {
 		log.SetOutput(logwriter)
-		// Remove timestamp
+		// Remove timestamp since syslog already provides it
 		log.SetFlags(0)
 	}
 
-	// Now from anywhere else in your program, you can use this:
 	log.Print("Loading config")
 
-	appConfig, configErr := config.NewConfig()
+	// Initialize application configuration from environment variables
+	appConfig, configError := config.NewConfig()
 
-	if configErr != nil {
-		log.Print(configErr.Error())
+	if configError != nil {
+		log.Print(configError.Error())
 		os.Exit(1)
 	}
 
 	log.Print("Creating RabbitMQ client")
+
+	// Create a cancellable context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 
-	rabbitmqClient := messagebroker.NewRabbimqClient(appConfig.RabbitmqConfig)
+	// Initialize RabbitMQ client and message broker
+	rabbitmqClient := messagebroker.NewRabbitmqClient(appConfig.RabbitmqConfig)
 	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
 
+	// Create channels for message processing and error handling
 	messagesReceived := make(chan []byte)
 	receiveErrors := make(chan error)
 
 	log.Print("Define os signal management")
+
+	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+
+	// Start signal handler goroutine
 	go func() {
 		sig := <-signalChannel
 		switch sig {
@@ -141,27 +65,34 @@ func main() {
 		}
 	}()
 
+	// Start message receiver in a separate goroutine
 	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
 
 	log.Print("Waiting for messages")
 
+	// Main message processing loop
 	for {
 		select {
 		case receivedError := <-receiveErrors:
+			// Handle RabbitMQ connection or message receiving errors
 			log.Print(receivedError.Error())
 			os.Exit(1)
 		case messageReceived := <-messagesReceived:
+			// Process received IP change notification
 			messageToSend := string(messageReceived)
 			log.Printf("Received new message: %s", messageToSend)
 			log.Print("Sending Email")
-			sendErr := sendEmail(appConfig, messageToSend)
 
-			if sendErr != nil {
-				log.Print(sendErr.Error())
+			// Send email notification about IP change
+			sendError := mailutils.SendEmail(appConfig, messageToSend)
+
+			if sendError != nil {
+				log.Print(sendError.Error())
 				os.Exit(1)
 			}
 
 		case <-ctx.Done():
+			// Graceful shutdown when context is cancelled
 			log.Print("Execution finished")
 			os.Exit(0)
 		}
