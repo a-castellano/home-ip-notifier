@@ -45,7 +45,6 @@ integration_tests:
     - export CC=/usr/bin/clang
     - *install_mod
   script:
-    - sleep 20
     - make test_integration
   services:
     - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
