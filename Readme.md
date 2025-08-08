@@ -30,3 +30,17 @@ The following mail config env variables are required:
 ## RabbitMQ Config
 
 RabbitMQ required config can be found in its [go types](https://git.windmaker.net/a-castellano/go-types/-/tree/master/rabbitmq?ref_type=heads) Readme.
+
+## Development
+
+### Checking mail inside docker
+
+Install swaks
+
+```bash
+swaks --to test@windmaker.com \
+ --server mailhog:6465 \
+ --tls \
+ --header "Subject: Test using swaks via stunnel" \
+ --body "This is a test"
+```

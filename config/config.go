@@ -12,15 +12,16 @@ import (
 
 // Config struct contians required config variables
 type Config struct {
-	MailFrom       string
-	MailDomain     string
-	SMTPHost       string
-	SMTPPort       int
-	SMTPName       string
-	SMTPPassword   string
-	Destination    string
-	NotifyQueue    string
-	RabbitmqConfig *rabbitmqconfig.Config
+	MailFrom          string
+	MailDomain        string
+	SMTPHost          string
+	SMTPPort          int
+	SMTPName          string
+	SMTPPassword      string
+	SMTPTLSValidation bool
+	Destination       string
+	NotifyQueue       string
+	RabbitmqConfig    *rabbitmqconfig.Config
 }
 
 // NewConfig checks if required env variables are present, returns config instance
@@ -49,6 +50,9 @@ func NewConfig() (*Config, error) {
 	config.SMTPName = os.Getenv("SMTPNAME")
 	config.SMTPPassword = os.Getenv("SMTPPASSWORD")
 	config.Destination = os.Getenv("DESTINATION")
+
+	//Check SMTP tls validation
+	config.SMTPTLSValidation = cmp.Or(os.Getenv("SMTPTLSVALIDATION"), "true") == "true"
 
 	var rabbitmqConfigErr error
 	config.RabbitmqConfig, rabbitmqConfigErr = rabbitmqconfig.NewConfig()

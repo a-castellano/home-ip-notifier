@@ -1,4 +1,4 @@
-image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202507280511
+image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202508080558
 
 stages:
   - lint
@@ -46,7 +46,14 @@ integration_tests:
     - *install_mod
   script:
     - make test_integration
-
+  services:
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
+      alias: rabbitmq
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
+      alias: mailhog
+      variables:
+        STUNNEL_SERVICE: smtp-mailhog
+        STUNNEL_ACCEPT: 6465
 coverage:
   stage: coverage
   rules:
@@ -56,8 +63,14 @@ coverage:
     - if: $CI_COMMIT_BRANCH == 'develop'
     - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202507280511
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
       alias: rabbitmq
+    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
+      alias: mailhog
+      variables:
+        STUNNEL_SERVICE: smtp-mailhog
+        STUNNEL_ACCEPT: 6465
+
   before_script:
     - export CC=/usr/bin/clang
     - *install_mod
@@ -138,7 +151,7 @@ sonarqube-vulnerability-report:
 
 pages:
   stage: deploy
-  image: registry.windmaker.net:5005/a-castellano/limani/base:202507280511
+  image: registry.windmaker.net:5005/a-castellano/limani/base:202508080558
   script:
     - mkdir -p public
     - cp coverage.html public/

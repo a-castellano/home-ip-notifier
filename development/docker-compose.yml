@@ -25,13 +25,16 @@ services:
         ipv4_address: 172.17.0.30
 
   mailhog:
-    image: docker.io/mailhog/mailhog:latest
+    image: registry.windmaker.net:5005/a-castellano/limani/base_mailhog
     ports:
-      - "1025:1025"
+      - "6465:6465"
       - "8025:8025"
+    environment:
+      STUNNEL_SERVICE: smtp-mailhog
+      STUNNEL_ACCEPT: 6465
     networks:
       home-ip-notifier-net:
-        ipv4_address: 172.17.0.40
+        ipv4_address: 172.17.0.50
 
 # Custom network configuration for service communication
 networks:
