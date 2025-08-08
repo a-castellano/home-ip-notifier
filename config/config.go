@@ -10,7 +10,7 @@ import (
 	rabbitmqconfig "github.com/a-castellano/go-types/rabbitmq"
 )
 
-// Config struct contians required config variables
+// Config struct contains required config variables
 type Config struct {
 	MailFrom          string
 	MailDomain        string
@@ -37,10 +37,10 @@ func NewConfig() (*Config, error) {
 			return nil, errors.New(errorString)
 		}
 	}
-	var portAtoiErr error
-	config.SMTPPort, portAtoiErr = strconv.Atoi(os.Getenv("SMTPPORT"))
+	var portAtoiError error
+	config.SMTPPort, portAtoiError = strconv.Atoi(os.Getenv("SMTPPORT"))
 
-	if portAtoiErr != nil {
+	if portAtoiError != nil {
 		return nil, errors.New("Failed to parse SMTPPORT value")
 	}
 
@@ -54,10 +54,10 @@ func NewConfig() (*Config, error) {
 	//Check SMTP tls validation
 	config.SMTPTLSValidation = cmp.Or(os.Getenv("SMTPTLSVALIDATION"), "true") == "true"
 
-	var rabbitmqConfigErr error
-	config.RabbitmqConfig, rabbitmqConfigErr = rabbitmqconfig.NewConfig()
-	if rabbitmqConfigErr != nil {
-		return nil, rabbitmqConfigErr
+	var rabbitmqConfigError error
+	config.RabbitmqConfig, rabbitmqConfigError = rabbitmqconfig.NewConfig()
+	if rabbitmqConfigError != nil {
+		return nil, rabbitmqConfigError
 	}
 
 	config.NotifyQueue = cmp.Or(os.Getenv("NOTIFY_QUEUE_NAME"), "home-ip-monitor-notifications")

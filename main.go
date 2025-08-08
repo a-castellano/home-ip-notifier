@@ -26,10 +26,10 @@ func main() {
 	// Now from anywhere else in your program, you can use this:
 	log.Print("Loading config")
 
-	appConfig, configErr := config.NewConfig()
+	appConfig, configError := config.NewConfig()
 
-	if configErr != nil {
-		log.Print(configErr.Error())
+	if configError != nil {
+		log.Print(configError.Error())
 		os.Exit(1)
 	}
 
@@ -68,10 +68,10 @@ func main() {
 			messageToSend := string(messageReceived)
 			log.Printf("Received new message: %s", messageToSend)
 			log.Print("Sending Email")
-			sendErr := mailutils.SendEmail(appConfig, messageToSend)
+			sendError := mailutils.SendEmail(appConfig, messageToSend)
 
-			if sendErr != nil {
-				log.Print(sendErr.Error())
+			if sendError != nil {
+				log.Print(sendError.Error())
 				os.Exit(1)
 			}
 
