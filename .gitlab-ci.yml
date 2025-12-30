@@ -1,4 +1,4 @@
-image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24:202508080558
+image: limani.windmaker.net/limani/base_golang_1_24:202512131754
 
 stages:
   - lint
@@ -47,9 +47,9 @@ integration_tests:
   script:
     - make test_integration
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
+    - name: limani.windmaker.net/limani/base_rabbitmq_server:202512131754
       alias: rabbitmq
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
+    - name: limani.windmaker.net/limani/base_mailhog:202512131754
       alias: mailhog
       variables:
         STUNNEL_SERVICE: smtp-mailhog
@@ -63,9 +63,9 @@ coverage:
     - if: $CI_COMMIT_BRANCH == 'develop'
     - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202508080558
+    - name: limani.windmaker.net/limani/base_rabbitmq_server:202512131754
       alias: rabbitmq
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_mailhog:202508080558
+    - name: limani.windmaker.net/limani/base_mailhog:202512131754
       alias: mailhog
       variables:
         STUNNEL_SERVICE: smtp-mailhog
@@ -151,7 +151,7 @@ sonarqube-vulnerability-report:
 
 pages:
   stage: deploy
-  image: registry.windmaker.net:5005/a-castellano/limani/base:202508080558
+  image: limani.windmaker.net/limani/base:202512131754
   script:
     - mkdir -p public
     - cp coverage.html public/
@@ -169,6 +169,8 @@ build_package:
   stage: build
   before_script:
     - export CC=/usr/bin/clang
+    - export GOOS=linux
+    - export GOARCH=arm64
     - *install_mod
   script:
     - make build

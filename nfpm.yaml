@@ -1,5 +1,5 @@
 name: "windmaker-home-ip-notifier"
-arch: "armv7h"
+arch: "aarch64"
 platform: "linux"
 version: "v0.0.3"
 section: "default"
@@ -17,7 +17,7 @@ contents:
   - src: ./home-ip-notifier
     dst: /usr/local/bin/windmaker-home-ip-notifier
   - src: ./packaging/deb/default/windmaker-home-ip-notifier
-    dst: /etc/default/windmaker-home-ip-notifier
+    dst: /etc/default/windmaker-home-ip-notifier-example
   - src: ./packaging/deb/systemd/windmaker-home-ip-notifier.service
     dst: /usr/lib/systemd/system/windmaker-home-ip-notifier.service
 overrides:
