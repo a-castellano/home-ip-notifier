@@ -28,3 +28,5 @@ main
 home-ip-notifier
 
 mail_credentials
+
+plan/*
