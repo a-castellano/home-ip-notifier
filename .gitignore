@@ -27,11 +27,11 @@ coverage.html
 main
 home-ip-notifier
 
-mail_credentials
 
 .vscode/*
 
 # Local Go module cache (populated by development/docker-compose.yml)
 development/.gomodcache/
+development/env_variables
 
 plan/*

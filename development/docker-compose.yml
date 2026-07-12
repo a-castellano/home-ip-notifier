@@ -25,20 +25,18 @@ services:
       home-ip-notifier-net:
         ipv4_address: 172.17.0.30
 
+  # MailHog server (behind stunnel) for SMTP testing
   mailhog:
     image: harbor.windmaker.net/limani/base_mailhog
     ports:
-      - "6465:6465"
-      - "8025:8025"
-    networks:
-      home-ip-notifier-net:
-        ipv4_address: 172.17.0.40
+      - "6465:6465" # SMTPS (stunnel) port
+      - "8025:8025" # MailHog web interface port
     environment:
       STUNNEL_SERVICE: smtp-mailhog
       STUNNEL_ACCEPT: 6465
     networks:
       home-ip-notifier-net:
-        ipv4_address: 172.17.0.50
+        ipv4_address: 172.17.0.40
 
 # Custom network configuration for service communication
 networks:

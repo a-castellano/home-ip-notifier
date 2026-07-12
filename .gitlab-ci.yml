@@ -114,7 +114,7 @@ sonarqube-check:
     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
     GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
   script:
-    - sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL}"
+    - sonar-scanner -Dproject.settings=development/sonar-project.properties -Dsonar.host.url="${SONAR_HOST_URL}"
   allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -134,7 +134,7 @@ sonarqube-vulnerability-report:
     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
     GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
   script:
-    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=a-castellano_home-ip-monitor_a0d9946c-4181-4181-af10-e5dac69d0658&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
+    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=a-castellano_home-ip-notifier_c4da9a70-dcc5-4ef5-8425-3f91b0d7526d&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
   allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -174,9 +174,9 @@ build_package:
     - *install_mod
   script:
     - make build
-    - nfpm package --packager archlinux
+    - cd packaging/nfpm && nfpm package --packager archlinux && cd ../..
     - mkdir arch_package
-    - mv *.pkg.tar.zst arch_package/
+    - mv packaging/nfpm/*.pkg.tar.zst arch_package/
   dependencies:
     - coverage
   artifacts:
