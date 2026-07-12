@@ -1,4 +1,4 @@
-image: limani.windmaker.net/limani/base_golang_1_24:202512131754
+image: harbor.windmaker.net/limani/base_golang_1_26
 
 stages:
   - lint
@@ -47,9 +47,9 @@ integration_tests:
   script:
     - make test_integration
   services:
-    - name: limani.windmaker.net/limani/base_rabbitmq_server:202512131754
+    - name: harbor.windmaker.net/limani/base_rabbitmq_server
       alias: rabbitmq
-    - name: limani.windmaker.net/limani/base_mailhog:202512131754
+    - name: harbor.windmaker.net/limani/base_mailhog
       alias: mailhog
       variables:
         STUNNEL_SERVICE: smtp-mailhog
@@ -63,9 +63,9 @@ coverage:
     - if: $CI_COMMIT_BRANCH == 'develop'
     - if: $CI_COMMIT_BRANCH =~ '/^.*all.*$/'
   services:
-    - name: limani.windmaker.net/limani/base_rabbitmq_server:202512131754
+    - name: harbor.windmaker.net/limani/base_rabbitmq_server
       alias: rabbitmq
-    - name: limani.windmaker.net/limani/base_mailhog:202512131754
+    - name: harbor.windmaker.net/limani/base_mailhog
       alias: mailhog
       variables:
         STUNNEL_SERVICE: smtp-mailhog
@@ -151,7 +151,7 @@ sonarqube-vulnerability-report:
 
 pages:
   stage: deploy
-  image: limani.windmaker.net/limani/base:202512131754
+  image: harbor.windmaker.net/limani/base
   script:
     - mkdir -p public
     - cp coverage.html public/
