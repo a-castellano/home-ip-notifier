@@ -9,4 +9,4 @@ require (
 	github.com/a-castellano/go-types v0.0.3
 )
 
-require github.com/rabbitmq/amqp091-go v1.10.0 // indirect
+require github.com/rabbitmq/amqp091-go v1.12.0 // indirect
