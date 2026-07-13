@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"log/syslog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	messagebroker "github.com/a-castellano/go-services/messagebroker"
-	config "github.com/a-castellano/home-ip-notifier/config"
-	mailutils "github.com/a-castellano/home-ip-notifier/mail"
+	messagebroker "github.com/a-castellano/go-services/services/messagebroker"
+	config "github.com/a-castellano/home-ip-notifier/internal/infra/config"
 )
 
 // main is the entry point of the application.
@@ -84,7 +84,7 @@ func main() {
 			log.Print("Sending Email")
 
 			// Send email notification about IP change
-			sendError := mailutils.SendEmail(appConfig, messageToSend)
+			sendError := errors.New("derrores")
 
 			if sendError != nil {
 				log.Print(sendError.Error())

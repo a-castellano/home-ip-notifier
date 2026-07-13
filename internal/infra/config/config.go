@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	rabbitmqconfig "github.com/a-castellano/go-types/rabbitmq"
+	rabbitmqconfig "github.com/a-castellano/go-types/types/rabbitmq"
 )
 
 // Config struct contains required config variables for the home-ip-notifier application.
