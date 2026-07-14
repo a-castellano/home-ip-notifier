@@ -1,4 +1,4 @@
-//go:build integration_tests || unit_tests
+//go:build integration_tests
 
 package notify
 
