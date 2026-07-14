@@ -4,6 +4,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 )
@@ -72,9 +73,8 @@ func TestConfigWithoutEnvVariables(t *testing.T) {
 	if err == nil {
 		t.Fatalf("TestConfigWithoutEnvVariables should fail.")
 	}
-	expectedError := "DESTINATION env variable must be set"
-	if err.Error() != expectedError {
-		t.Fatalf("TestConfigWithoutEnvVariables error should be \"%s\" but it was \"%s\".", expectedError, err.Error())
+	if !errors.Is(err, ErrMissingDestination) {
+		t.Fatalf("TestConfigWithoutEnvVariables error should be \"%s\" but it was \"%s\".", ErrMissingDestination, err.Error())
 	}
 
 }
@@ -184,7 +184,7 @@ func TestConfig(t *testing.T) {
 
 	expectedDestination := "test@windmaker.net"
 	if config.Destination != expectedDestination {
-		t.Fatalf("TestConfig config.SMTPConfig.User should be \"%s\" but it was \"%s\"", expectedDestination, config.Destination)
+		t.Fatalf("TestConfig config.Destination should be \"%s\" but it was \"%s\"", expectedDestination, config.Destination)
 	}
 
 }

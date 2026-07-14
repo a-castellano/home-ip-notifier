@@ -11,6 +11,9 @@ import (
 	smtpconfig "github.com/a-castellano/go-types/types/smtp"
 )
 
+// ErrMissingDestination is returned when the DESTINATION env variable is not set.
+var ErrMissingDestination = errors.New("DESTINATION env variable must be set")
+
 type Config struct {
 	SMTPConfig  *smtpconfig.Config
 	Destination string
@@ -28,20 +31,19 @@ func NewConfig(ctx context.Context) (*Config, error) {
 
 	destination, destinationVariableFound := os.LookupEnv("DESTINATION")
 
-	if destinationVariableFound == false {
-		errorString := "DESTINATION env variable must be set"
-		log.ErrorContext(ctx, "error retriveing destiantion", "error", errorString)
-		return nil, errors.New(errorString)
+	if !destinationVariableFound {
+		log.ErrorContext(ctx, "error retrieving destination", "error", ErrMissingDestination)
+		return nil, ErrMissingDestination
 	}
 	config.Destination = destination
-	log.DebugContext(ctx, "destiantion set", "destination", config.Destination)
+	log.DebugContext(ctx, "destination set", "destination", config.Destination)
 
 	config.NotifyQueue = cmp.Or(os.Getenv("NOTIFY_QUEUE_NAME"), "home-ip-monitor-notifications")
-	log.DebugContext(ctx, "queue where messages will be process has ben set", "queue", config.NotifyQueue)
+	log.DebugContext(ctx, "queue where messages will be processed has been set", "queue", config.NotifyQueue)
 
 	config.RabbitmqConfig, rabbitmqConfigError = rabbitmqconfig.NewConfig()
 	if rabbitmqConfigError != nil {
-		log.ErrorContext(ctx, "error setting rabbimq config", "error", rabbitmqConfigError)
+		log.ErrorContext(ctx, "error setting rabbitmq config", "error", rabbitmqConfigError)
 		return nil, rabbitmqConfigError
 	}
 
