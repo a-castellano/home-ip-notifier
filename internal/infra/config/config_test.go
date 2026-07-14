@@ -3,273 +3,188 @@
 package config
 
 import (
+	"context"
 	"os"
 	"testing"
 )
 
-// Global variables to store original environment variable values
-// These are used to restore the environment after tests
-var currentMailFrom string
-var currentMailFromDefined bool
+type envVariable struct {
+	Value        string
+	IsDefined    bool
+	VariableName string
+}
 
-var currentMailDomain string
-var currentMailDomainDefined bool
+var envVariables = map[string]envVariable{
+	//smtp
+	"smtp_from":        {VariableName: "SMTP_FROM"},
+	"smtp_host":        {VariableName: "SMTP_HOST"},
+	"smtp_port":        {VariableName: "SMTP_PORT"},
+	"smtp_username":    {VariableName: "SMTP_USERNAME"},
+	"smtp_password":    {VariableName: "SMTP_PASSWORD"},
+	"smtp_validateTLS": {VariableName: "SMTP_VALIDATE_TLS"},
+	//rabbitmq
+	"rabbitmq_host":     {VariableName: "RABBITMQ_HOST"},
+	"rabbitmq_port":     {VariableName: "RABBITMQ_PORT"},
+	"rabbitmq_user":     {VariableName: "RABBITMQ_USER"},
+	"rabbitmq_password": {VariableName: "RABBITMQ_PASSWORD"},
+	//home-ip-notifier
+	"destination":       {VariableName: "DESTINATION"},
+	"notify_queue_name": {VariableName: "NOTIFY_QUEUE_NAME"},
+}
 
-var currentSMTPPort string
-var currentSMTPPortDefined bool
-
-var currentSMTPHost string
-var currentSMTPHostDefined bool
-
-var currentSMTPName string
-var currentSMTPNameDefined bool
-
-var currentSMTPPassword string
-var currentSMTPPasswordDefined bool
-
-var currentDestination string
-var currentDestinationDefined bool
-
-var currentRabbitmqHost string
-var currentRabbitmqHostDefined bool
-
-var currentRabbitmqPort string
-var currentRabbitmqPortDefined bool
-
-var currentRabbitmqUser string
-var currentRabbitmqUserDefined bool
-
-var currentRabbitmqPassword string
-var currentRabbitmqPasswordDefined bool
-
-// setUp saves the current environment variables and clears them for testing
-// This ensures tests start with a clean environment state
 func setUp() {
 
-	if envMailFrom, found := os.LookupEnv("MAILFROM"); found {
-		currentMailFrom = envMailFrom
-		currentMailFromDefined = true
-	} else {
-		currentMailFromDefined = false
+	for key, variable := range envVariables {
+
+		if envValue, found := os.LookupEnv(variable.VariableName); found {
+			variable.Value = envValue
+			variable.IsDefined = true
+		} else {
+			variable.IsDefined = false
+		}
+
+		os.Unsetenv(variable.VariableName)
+
+		envVariables[key] = variable
 	}
 
-	if envMailDomain, found := os.LookupEnv("MAILDOMAIN"); found {
-		currentMailDomain = envMailDomain
-		currentMailDomainDefined = true
-	} else {
-		currentMailDomainDefined = false
-	}
-
-	if envSMTPHost, found := os.LookupEnv("SMTPHOST"); found {
-		currentSMTPHost = envSMTPHost
-		currentSMTPHostDefined = true
-	} else {
-		currentSMTPHostDefined = false
-	}
-
-	if envSMTPPort, found := os.LookupEnv("SMTPPORT"); found {
-		currentSMTPPort = envSMTPPort
-		currentSMTPPortDefined = true
-	} else {
-		currentSMTPPortDefined = false
-	}
-
-	if envSMTPName, found := os.LookupEnv("SMTPName"); found {
-		currentSMTPName = envSMTPName
-		currentSMTPNameDefined = true
-	} else {
-		currentSMTPNameDefined = false
-	}
-
-	if envSMTPPassword, found := os.LookupEnv("SMTPPASSWORD"); found {
-		currentSMTPPassword = envSMTPPassword
-		currentSMTPPasswordDefined = true
-	} else {
-		currentSMTPPasswordDefined = false
-	}
-
-	if envDestination, found := os.LookupEnv("DESTINATION"); found {
-		currentDestination = envDestination
-		currentDestinationDefined = true
-	} else {
-		currentDestinationDefined = false
-	}
-
-	// Clear all environment variables to ensure clean test state
-	os.Unsetenv("MAILFROM")
-	os.Unsetenv("MAILDOMAIN")
-	os.Unsetenv("SMTPHOST")
-	os.Unsetenv("SMTPPORT")
-	os.Unsetenv("SMTPName")
-	os.Unsetenv("SMTPPASSWORD")
-	os.Unsetenv("DESTINATION")
-
-	os.Unsetenv("RABBITMQ_HOST")
-	os.Unsetenv("RABBITMQ_PORT")
-	os.Unsetenv("RABBITMQ_DATABASE")
-	os.Unsetenv("RABBITMQ_PASSWORD")
 }
 
-// teardown restores the original environment variables after tests
-// This ensures tests don't affect the system environment
 func teardown() {
 
-	if currentMailFromDefined {
-		os.Setenv("MAILFROM", currentMailFrom)
-	} else {
-		os.Unsetenv("MAILFROM")
-	}
-
-	if currentMailDomainDefined {
-		os.Setenv("MAILDOMAIN", currentMailDomain)
-	} else {
-		os.Unsetenv("MAILDOMAIN")
-	}
-
-	if currentSMTPHostDefined {
-		os.Setenv("SMTPHOST", currentSMTPHost)
-	} else {
-		os.Unsetenv("SMTPHOST")
-	}
-
-	if currentSMTPPortDefined {
-		os.Setenv("SMTPPORT", currentSMTPPort)
-	} else {
-		os.Unsetenv("SMTPPORT")
-	}
-
-	if currentSMTPNameDefined {
-		os.Setenv("SMTPName", currentSMTPName)
-	} else {
-		os.Unsetenv("SMTPName")
-	}
-
-	if currentSMTPPasswordDefined {
-		os.Setenv("SMTPPASSWORD", currentSMTPPassword)
-	} else {
-		os.Unsetenv("SMTPPASSWORD")
-	}
-
-	if currentDestinationDefined {
-		os.Setenv("DESTINATION", currentDestination)
-	} else {
-		os.Unsetenv("DESTINATION")
-	}
-
-	if currentRabbitmqHostDefined {
-		os.Setenv("RABBITMQ_HOST", currentRabbitmqHost)
-	} else {
-		os.Unsetenv("RABBITMQ_HOST")
-	}
-
-	if currentRabbitmqPortDefined {
-		os.Setenv("RABBITMQ_PORT", currentRabbitmqPort)
-	} else {
-		os.Unsetenv("RABBITMQ_PORT")
-	}
-
-	if currentRabbitmqUserDefined {
-		os.Setenv("RABBITMQ_USER", currentRabbitmqUser)
-	} else {
-		os.Unsetenv("RABBITMQ_USER")
-	}
-
-	if currentRabbitmqPasswordDefined {
-		os.Setenv("RABBITMQ_PASSWORD", currentRabbitmqPassword)
-	} else {
-		os.Unsetenv("RABBITMQ_PASSWORD")
+	for _, variable := range envVariables {
+		if variable.IsDefined {
+			os.Setenv(variable.VariableName, variable.Value)
+		} else {
+			os.Unsetenv(variable.VariableName)
+		}
 	}
 }
 
-// TestConfigWithoutEnvVariables tests that NewConfig fails when required environment variables are missing
-// This ensures the application properly validates configuration requirements
 func TestConfigWithoutEnvVariables(t *testing.T) {
 
 	setUp()
 	defer teardown()
 
-	_, err := NewConfig()
+	ctx := context.Background()
+	_, err := NewConfig(ctx)
 
 	if err == nil {
-		t.Errorf("TestConfigWithoutEnvVariables should fail.")
-	} else {
-		if err.Error() != "MAILFROM env variable must be set" {
-			t.Errorf("TestConfigWithoutEnvVariables error should be \"MAILFROM env variable must be set\" but it was \"%s\".", err.Error())
-		}
+		t.Fatalf("TestConfigWithoutEnvVariables should fail.")
 	}
+	expectedError := "DESTINATION env variable must be set"
+	if err.Error() != expectedError {
+		t.Fatalf("TestConfigWithoutEnvVariables error should be \"%s\" but it was \"%s\".", expectedError, err.Error())
+	}
+
 }
 
-// TestConfigWithInvalidSMTPPort tests that NewConfig fails when SMTPPORT is not a valid integer
-// This ensures proper validation of numeric configuration values
-func TestConfigWithInvalidSMTPPort(t *testing.T) {
+func TestConfigWithoutSmtpConfig(t *testing.T) {
 
 	setUp()
 	defer teardown()
 
-	// Set all required variables but with invalid SMTP port
-	os.Setenv("MAILFROM", "test")
-	os.Setenv("MAILDOMAIN", "test")
-	os.Setenv("SMTPHOST", "test")
-	os.Setenv("SMTPPORT", "invalid")
-	os.Setenv("SMTPNAME", "test")
-	os.Setenv("SMTPPASSWORD", "test")
-	os.Setenv("DESTINATION", "test")
+	os.Setenv("DESTINATION", "test@windmaker.net")
 
-	_, err := NewConfig()
+	ctx := context.Background()
+	_, err := NewConfig(ctx)
 
 	if err == nil {
-		t.Errorf("TestConfigWithInvalidSMTPPORT should fail.")
-	} else {
-		if err.Error() != "Failed to parse SMTPPORT value" {
-			t.Errorf("TestConfigWithInvalidSMTPPort error should be \"Failed to parse SMTPPORT value\" but it was \"%s\".", err.Error())
-		}
+		t.Fatalf("TestConfigWithoutSmtpConfig should fail.")
+	}
+	expectedError := "env variable \"SMTP_FROM\" must be set, cannot load smtp config"
+
+	if err.Error() != expectedError {
+		t.Fatalf("TestConfigWithoutSmtpConfig error should be \"%s\" but it was \"%s\".", expectedError, err.Error())
 	}
 }
 
-// TestConfigWithInvalidRabbitMQPort tests that NewConfig fails when RABBITMQ_PORT is not a valid integer
-// This ensures RabbitMQ configuration validation works correctly
-func TestConfigWithInvalidRabbitMQPort(t *testing.T) {
+func TestConfigWithoutRabbitmqConfig(t *testing.T) {
 
 	setUp()
 	defer teardown()
 
-	// Set all required variables but with invalid RabbitMQ port
-	os.Setenv("MAILFROM", "test")
-	os.Setenv("MAILDOMAIN", "test")
-	os.Setenv("SMTPHOST", "test")
-	os.Setenv("SMTPPORT", "25")
-	os.Setenv("SMTPName", "test")
-	os.Setenv("SMTPPASSWORD", "test")
-	os.Setenv("DESTINATION", "test")
-	os.Setenv("RABBITMQ_PORT", "invalid")
+	os.Setenv("SMTP_FROM", "test@example.com")
+	os.Setenv("SMTP_HOST", "test")
+	os.Setenv("SMTP_PORT", "25")
+	os.Setenv("SMTP_USERNAME", "test")
+	os.Setenv("SMTP_PASSWORD", "test")
+	os.Setenv("SMTP_VALIDATE_TLS", "anyvaluedifferentfromtrue")
 
-	_, err := NewConfig()
+	os.Setenv("DESTINATION", "test@windmaker.net")
 
-	if err == nil {
-		t.Errorf("TestConfigWithInvalidSMTPPort should fail with invalid RABBITMQ_PORT.")
-	}
-}
-
-// TestConfigWithValidRabbitMQPort tests that NewConfig succeeds with valid RabbitMQ configuration
-// This ensures the configuration system works correctly with valid inputs
-func TestConfigWithValidRabbitMQPort(t *testing.T) {
-
-	setUp()
-	defer teardown()
-
-	// Set all required variables with valid values
-	os.Setenv("MAILFROM", "test")
-	os.Setenv("MAILDOMAIN", "test")
-	os.Setenv("SMTPHOST", "test")
-	os.Setenv("SMTPPORT", "25")
-	os.Setenv("SMTPName", "test")
-	os.Setenv("SMTPPASSWORD", "test")
-	os.Setenv("DESTINATION", "test")
-	os.Setenv("RABBITMQ_PORT", "5672")
-
-	_, err := NewConfig()
+	ctx := context.Background()
+	_, err := NewConfig(ctx)
 
 	if err != nil {
-		t.Errorf("TestConfigWithValidRabbitMQPort should not fail, error: %s", err.Error())
+		t.Fatalf("TestConfigWithoutRabbitmqConfig should not fail as rabbitmq type has defult values")
 	}
+}
+
+func TestConfigWithInvalidRabbitmqConfig(t *testing.T) {
+
+	setUp()
+	defer teardown()
+
+	os.Setenv("SMTP_FROM", "test@example.com")
+	os.Setenv("SMTP_HOST", "test")
+	os.Setenv("SMTP_PORT", "25")
+	os.Setenv("SMTP_USERNAME", "test")
+	os.Setenv("SMTP_PASSWORD", "test")
+	os.Setenv("SMTP_VALIDATE_TLS", "anyvaluedifferentfromtrue")
+
+	os.Setenv("DESTINATION", "test@windmaker.net")
+
+	os.Setenv("RABBITMQ_PORT", "invalid")
+
+	ctx := context.Background()
+	_, err := NewConfig(ctx)
+
+	if err == nil {
+		t.Fatalf("TestConfigWithInvalidRabbitmqConfig invalid")
+	}
+	expectedError := "strconv.Atoi: parsing \"invalid\": invalid syntax"
+
+	if err.Error() != expectedError {
+		t.Fatalf("TestConfigWithInvalidRabbitmqConfig error should be \"%s\" but it was \"%s\".", expectedError, err.Error())
+	}
+}
+
+func TestConfig(t *testing.T) {
+
+	setUp()
+	defer teardown()
+
+	os.Setenv("SMTP_FROM", "test@example.com")
+	os.Setenv("SMTP_HOST", "test")
+	os.Setenv("SMTP_PORT", "25")
+	os.Setenv("SMTP_USERNAME", "test")
+	os.Setenv("SMTP_PASSWORD", "test")
+	os.Setenv("SMTP_VALIDATE_TLS", "anyvaluedifferentfromtrue")
+
+	os.Setenv("DESTINATION", "test@windmaker.net")
+	os.Setenv("NOTIFY_QUEUE_NAME", "other_queue")
+
+	ctx := context.Background()
+	config, err := NewConfig(ctx)
+
+	if err != nil {
+		t.Fatalf("TestConfig should not fail")
+	}
+
+	expectedQueue := "other_queue"
+	if config.NotifyQueue != expectedQueue {
+		t.Fatalf("TestConfig config.NotifyQueue should be \"%s\" but it was \"%s\"", expectedQueue, config.NotifyQueue)
+	}
+
+	expectedSMTPUser := "test"
+	if config.SMTPConfig.Username() != expectedSMTPUser {
+		t.Fatalf("TestConfig config.SMTPConfig.User should be \"%s\" but it was \"%s\"", expectedSMTPUser, config.SMTPConfig.Username())
+	}
+
+	expectedDestination := "test@windmaker.net"
+	if config.Destination != expectedDestination {
+		t.Fatalf("TestConfig config.SMTPConfig.User should be \"%s\" but it was \"%s\"", expectedDestination, config.Destination)
+	}
+
 }

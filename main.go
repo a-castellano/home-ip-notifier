@@ -2,14 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"log/syslog"
 	"os"
-	"os/signal"
-	"syscall"
 
-	messagebroker "github.com/a-castellano/go-services/services/messagebroker"
 	config "github.com/a-castellano/home-ip-notifier/internal/infra/config"
 )
 
@@ -27,8 +23,11 @@ func main() {
 
 	log.Print("Loading config")
 
+	// Create a cancellable context for graceful shutdown
+	ctx, _ := context.WithCancel(context.Background())
+
 	// Initialize application configuration from environment variables
-	appConfig, configError := config.NewConfig()
+	_, configError := config.NewConfig(ctx)
 
 	if configError != nil {
 		log.Print(configError.Error())
@@ -37,65 +36,62 @@ func main() {
 
 	log.Print("Creating RabbitMQ client")
 
-	// Create a cancellable context for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-
-	// Initialize RabbitMQ client and message broker
-	rabbitmqClient := messagebroker.NewRabbitmqClient(appConfig.RabbitmqConfig)
-	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
-
-	// Create channels for message processing and error handling
-	messagesReceived := make(chan []byte)
-	receiveErrors := make(chan error)
-
-	log.Print("Define os signal management")
-
-	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
-	signalChannel := make(chan os.Signal, 2)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-
-	// Start signal handler goroutine
-	go func() {
-		sig := <-signalChannel
-		switch sig {
-		case os.Interrupt:
-			cancel()
-		case syscall.SIGTERM:
-			cancel()
-		}
-	}()
-
-	// Start message receiver in a separate goroutine
-	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
-
-	log.Print("Waiting for messages")
-
-	// Main message processing loop
-	for {
-		select {
-		case receivedError := <-receiveErrors:
-			// Handle RabbitMQ connection or message receiving errors
-			log.Print(receivedError.Error())
-			os.Exit(1)
-		case messageReceived := <-messagesReceived:
-			// Process received IP change notification
-			messageToSend := string(messageReceived)
-			log.Printf("Received new message: %s", messageToSend)
-			log.Print("Sending Email")
-
-			// Send email notification about IP change
-			sendError := errors.New("derrores")
-
-			if sendError != nil {
-				log.Print(sendError.Error())
-				os.Exit(1)
-			}
-
-		case <-ctx.Done():
-			// Graceful shutdown when context is cancelled
-			log.Print("Execution finished")
-			os.Exit(0)
-		}
-	}
+	//	// Initialize RabbitMQ client and message broker
+	//	rabbitmqClient := messagebroker.NewRabbitmqClient(appConfig.RabbitmqConfig)
+	//	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
+	//
+	//	// Create channels for message processing and error handling
+	//	messagesReceived := make(chan []byte)
+	//	receiveErrors := make(chan error)
+	//
+	//	log.Print("Define os signal management")
+	//
+	//	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
+	//	signalChannel := make(chan os.Signal, 2)
+	//	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+	//
+	//	// Start signal handler goroutine
+	//	go func() {
+	//		sig := <-signalChannel
+	//		switch sig {
+	//		case os.Interrupt:
+	//			cancel()
+	//		case syscall.SIGTERM:
+	//			cancel()
+	//		}
+	//	}()
+	//
+	//	// Start message receiver in a separate goroutine
+	//	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
+	//
+	//	log.Print("Waiting for messages")
+	//
+	//	// Main message processing loop
+	//	for {
+	//		select {
+	//		case receivedError := <-receiveErrors:
+	//			// Handle RabbitMQ connection or message receiving errors
+	//			log.Print(receivedError.Error())
+	//			os.Exit(1)
+	//		case messageReceived := <-messagesReceived:
+	//			// Process received IP change notification
+	//			messageToSend := string(messageReceived)
+	//			log.Printf("Received new message: %s", messageToSend)
+	//			log.Print("Sending Email")
+	//
+	//			// Send email notification about IP change
+	//			sendError := errors.New("derrores")
+	//
+	//			if sendError != nil {
+	//				log.Print(sendError.Error())
+	//				os.Exit(1)
+	//			}
+	//
+	//		case <-ctx.Done():
+	//			// Graceful shutdown when context is cancelled
+	//			log.Print("Execution finished")
+	//			os.Exit(0)
+	//		}
+	//	}
 
 }
