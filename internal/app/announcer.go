@@ -36,7 +36,7 @@ func (a Announcer) ProcessMessage(ctx context.Context, message string) error {
 		// Status only: the error event is already recorded by the
 		// child span
 		span.SetStatus(codes.Error, errorString)
-		return a.notifier.Notify(ctx, subject, message)
+		return err
 	}
 	return nil
 }
