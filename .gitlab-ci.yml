@@ -36,6 +36,9 @@ unit_tests:
   before_script:
     - export CC=/usr/bin/clang
     - *install_mod
+  rules:
+    - when: always
+
   script:
     - make test
 
@@ -54,6 +57,8 @@ integration_tests:
       variables:
         STUNNEL_SERVICE: smtp-mailhog
         STUNNEL_ACCEPT: 6465
+  rules:
+    - when: always
 coverage:
   stage: coverage
   rules:
