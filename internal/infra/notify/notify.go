@@ -37,7 +37,6 @@ func (n *MailNotificator) Notify(ctx context.Context, title string, message stri
 		n.destination,
 		title,
 		message,
-		notification.WithLevel(notification.Info),
 	)
 
 	if newMessageError != nil {
