@@ -2,96 +2,118 @@ package main
 
 import (
 	"context"
-	"log"
-	"log/syslog"
+	systemlog "log"
 	"os"
+	"os/signal"
+	"syscall"
 
+	logger "github.com/a-castellano/go-services/infra/logger"
+	opentelemetry "github.com/a-castellano/go-services/infra/opentelemetry"
+	rabbitmq "github.com/a-castellano/go-services/infra/rabbitmq"
+	messagebroker "github.com/a-castellano/go-services/services/messagebroker"
+	otelconfig "github.com/a-castellano/go-types/types/opentelemetry"
+	slogconfig "github.com/a-castellano/go-types/types/slog"
+	announce "github.com/a-castellano/home-ip-notifier/internal/app"
 	config "github.com/a-castellano/home-ip-notifier/internal/infra/config"
+	consume "github.com/a-castellano/home-ip-notifier/internal/infra/consume"
+	notify "github.com/a-castellano/home-ip-notifier/internal/infra/notify"
 )
 
-// main is the entry point of the application.
-// It sets up logging, configuration, RabbitMQ connection, and starts the message processing loop.
-func main() {
+func run(ctx context.Context, cancel context.CancelFunc) {
 
-	// Configure logger to write to the syslog for better system integration
-	logwriter, e := syslog.New(syslog.LOG_INFO, "home-ip-notifier")
-	if e == nil {
-		log.SetOutput(logwriter)
-		// Remove timestamp since syslog already provides it
-		log.SetFlags(0)
-	}
+	log := logger.FromContext(ctx).With("operation", "main.run")
+	log.DebugContext(ctx, "Loading config")
 
-	log.Print("Loading config")
-
-	// Create a cancellable context for graceful shutdown
-	ctx, _ := context.WithCancel(context.Background())
-
-	// Initialize application configuration from environment variables
-	_, configError := config.NewConfig(ctx)
-
-	if configError != nil {
-		log.Print(configError.Error())
+	otelConfig, otelConfigErr := otelconfig.NewConfig()
+	if otelConfigErr != nil {
+		log.ErrorContext(ctx, "telemetry config has errors", "error", otelConfigErr)
 		os.Exit(1)
 	}
 
-	log.Print("Creating RabbitMQ client")
+	shutdown, err := opentelemetry.SetupOpenTelemetry(ctx, otelConfig)
+	if err != nil {
+		// Telemetry failed to start; the app keeps running without it.
+		log.ErrorContext(ctx, "telemetry setup failed", "error", err)
+	}
+	defer func() {
+		if err := shutdown(ctx); err != nil {
+			log.ErrorContext(ctx, "telemetry shutdown failed", "error", err)
+		}
+	}()
 
-	//	// Initialize RabbitMQ client and message broker
-	//	rabbitmqClient := messagebroker.NewRabbitmqClient(appConfig.RabbitmqConfig)
-	//	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
-	//
-	//	// Create channels for message processing and error handling
-	//	messagesReceived := make(chan []byte)
-	//	receiveErrors := make(chan error)
-	//
-	//	log.Print("Define os signal management")
-	//
-	//	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
-	//	signalChannel := make(chan os.Signal, 2)
-	//	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-	//
-	//	// Start signal handler goroutine
-	//	go func() {
-	//		sig := <-signalChannel
-	//		switch sig {
-	//		case os.Interrupt:
-	//			cancel()
-	//		case syscall.SIGTERM:
-	//			cancel()
-	//		}
-	//	}()
-	//
-	//	// Start message receiver in a separate goroutine
-	//	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
-	//
-	//	log.Print("Waiting for messages")
-	//
-	//	// Main message processing loop
-	//	for {
-	//		select {
-	//		case receivedError := <-receiveErrors:
-	//			// Handle RabbitMQ connection or message receiving errors
-	//			log.Print(receivedError.Error())
-	//			os.Exit(1)
-	//		case messageReceived := <-messagesReceived:
-	//			// Process received IP change notification
-	//			messageToSend := string(messageReceived)
-	//			log.Printf("Received new message: %s", messageToSend)
-	//			log.Print("Sending Email")
-	//
-	//			// Send email notification about IP change
-	//			sendError := errors.New("derrores")
-	//
-	//			if sendError != nil {
-	//				log.Print(sendError.Error())
-	//				os.Exit(1)
-	//			}
-	//
-	//		case <-ctx.Done():
-	//			// Graceful shutdown when context is cancelled
-	//			log.Print("Execution finished")
-	//			os.Exit(0)
-	//		}
-	//	}
+	appConfig, configErr := config.NewConfig(ctx)
 
+	if configErr != nil {
+		log.ErrorContext(ctx, "Error loading app config", "error", configErr)
+		os.Exit(1)
+	}
+
+	log.InfoContext(ctx, "Initiating required services")
+	log.DebugContext(ctx, "Defining rabbitmq instance")
+	rabbitmqClient := rabbitmq.NewRabbitmqClient(appConfig.RabbitmqConfig)
+	log.DebugContext(ctx, "Defining messagebroker instance")
+	messageBroker := messagebroker.MessageBroker{Client: rabbitmqClient}
+
+	messagesReceived := make(chan []byte)
+	receiveErrors := make(chan error)
+
+	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
+	signalChannel := make(chan os.Signal, 2)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+
+	// Start signal handler goroutine
+	go func() {
+		sig := <-signalChannel
+		switch sig {
+		case os.Interrupt:
+			cancel()
+		case syscall.SIGTERM:
+			cancel()
+		}
+	}()
+
+	log.DebugContext(ctx, "creating notificator")
+	notificator := notify.NewNotificator(ctx, appConfig.SMTPConfig, appConfig.Destination)
+	log.DebugContext(ctx, "creating announer")
+	announcer := announce.NewAnnouncer(notificator)
+	log.DebugContext(ctx, "creating consumer")
+	consumer := consume.NewConsumer(appConfig.NotifyQueue, announcer)
+
+	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
+
+	log.InfoContext(ctx, "waiting for messages")
+
+	// Main message processing loop
+	for {
+		select {
+		case receivedError := <-receiveErrors:
+			// Handle RabbitMQ connection or message receiving errors
+			log.ErrorContext(ctx, receivedError.Error())
+			os.Exit(1)
+		case messageReceived := <-messagesReceived:
+			log.InfoContext(ctx, "processing new message")
+			consumer.Consume(ctx, messageReceived)
+
+		case <-ctx.Done():
+			// Graceful shutdown when context is cancelled
+			log.InfoContext(ctx, "execution finished")
+			os.Exit(0)
+		}
+	}
+
+}
+
+func main() {
+
+	// First, initiate logger
+	logConfig, err := slogconfig.NewConfig()
+	if err != nil {
+		systemlog.Fatal(err)
+	}
+
+	appLogger := logger.NewLogger(logConfig)
+	appContext, cancel := context.WithCancel(context.Background())
+	ctx := logger.WithLogger(appContext, appLogger)
+
+	run(ctx, cancel)
 }
