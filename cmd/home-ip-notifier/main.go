@@ -19,7 +19,7 @@ import (
 	notify "github.com/a-castellano/home-ip-notifier/internal/infra/notify"
 )
 
-func run(ctx context.Context, cancel context.CancelFunc) {
+func run(ctx context.Context, cancel context.CancelFunc) error {
 
 	log := logger.FromContext(ctx).With("operation", "main.run")
 	log.DebugContext(ctx, "Loading config")
@@ -27,7 +27,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	otelConfig, otelConfigErr := otelconfig.NewConfig()
 	if otelConfigErr != nil {
 		log.ErrorContext(ctx, "telemetry config has errors", "error", otelConfigErr)
-		os.Exit(1)
+		return otelConfigErr
 	}
 
 	shutdown, err := opentelemetry.SetupOpenTelemetry(ctx, otelConfig)
@@ -45,7 +45,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 
 	if configErr != nil {
 		log.ErrorContext(ctx, "Error loading app config", "error", configErr)
-		os.Exit(1)
+		return configErr
 	}
 
 	log.InfoContext(ctx, "Initiating required services")
@@ -65,9 +65,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	go func() {
 		sig := <-signalChannel
 		switch sig {
-		case os.Interrupt:
-			cancel()
-		case syscall.SIGTERM:
+		case os.Interrupt, syscall.SIGTERM:
 			cancel()
 		}
 	}()
@@ -89,7 +87,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		case receivedError := <-receiveErrors:
 			// Handle RabbitMQ connection or message receiving errors
 			log.ErrorContext(ctx, receivedError.Error())
-			os.Exit(1)
+			return receivedError
 		case messageReceived := <-messagesReceived:
 			log.InfoContext(ctx, "processing new message")
 			consumer.Consume(ctx, messageReceived)
@@ -97,7 +95,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		case <-ctx.Done():
 			// Graceful shutdown when context is cancelled
 			log.InfoContext(ctx, "execution finished")
-			os.Exit(0)
+			return nil
 		}
 	}
 
@@ -115,5 +113,9 @@ func main() {
 	appContext, cancel := context.WithCancel(context.Background())
 	ctx := logger.WithLogger(appContext, appLogger)
 
-	run(ctx, cancel)
+	runErr := run(ctx, cancel)
+	if runErr != nil {
+		appLogger.ErrorContext(ctx, "home-ip-notifier failed", "error", runErr)
+		os.Exit(1)
+	}
 }
