@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	logger "github.com/a-castellano/go-services/infra/logger"
 	opentelemetry "github.com/a-castellano/go-services/infra/opentelemetry"
@@ -19,7 +20,11 @@ import (
 	notify "github.com/a-castellano/home-ip-notifier/internal/infra/notify"
 )
 
-func run(ctx context.Context, cancel context.CancelFunc) error {
+func run(ctx context.Context) error {
+
+	// Graceful shutdown: SIGINT/SIGTERM cancel the context
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	log := logger.FromContext(ctx).With("operation", "main.run")
 	log.DebugContext(ctx, "Loading config")
@@ -36,8 +41,12 @@ func run(ctx context.Context, cancel context.CancelFunc) error {
 		log.ErrorContext(ctx, "telemetry setup failed", "error", err)
 	}
 	defer func() {
-		if err := shutdown(ctx); err != nil {
-			log.ErrorContext(ctx, "telemetry shutdown failed", "error", err)
+		// By the time this runs the signal context is already cancelled;
+		// give the exporters their own deadline to flush pending spans.
+		shutdownCtx, cancelShutdown := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer cancelShutdown()
+		if err := shutdown(shutdownCtx); err != nil {
+			log.ErrorContext(shutdownCtx, "telemetry shutdown failed", "error", err)
 		}
 	}()
 
@@ -57,22 +66,9 @@ func run(ctx context.Context, cancel context.CancelFunc) error {
 	messagesReceived := make(chan []byte)
 	receiveErrors := make(chan error)
 
-	// Set up signal handling for graceful shutdown (SIGINT, SIGTERM)
-	signalChannel := make(chan os.Signal, 2)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-
-	// Start signal handler goroutine
-	go func() {
-		sig := <-signalChannel
-		switch sig {
-		case os.Interrupt, syscall.SIGTERM:
-			cancel()
-		}
-	}()
-
 	log.DebugContext(ctx, "creating notificator")
 	notificator := notify.NewNotificator(ctx, appConfig.SMTPConfig, appConfig.Destination)
-	log.DebugContext(ctx, "creating announer")
+	log.DebugContext(ctx, "creating announcer")
 	announcer := announce.NewAnnouncer(notificator)
 	log.DebugContext(ctx, "creating consumer")
 	consumer := consume.NewConsumer(appConfig.NotifyQueue, announcer)
@@ -90,7 +86,10 @@ func run(ctx context.Context, cancel context.CancelFunc) error {
 			return receivedError
 		case messageReceived := <-messagesReceived:
 			log.InfoContext(ctx, "processing new message")
-			consumer.Consume(ctx, messageReceived)
+			// Failed messages are dropped on purpose: consumption is
+			// auto-ack, so exiting would not requeue them, and the
+			// failure is already logged and recorded in the trace.
+			_ = consumer.Consume(ctx, messageReceived)
 
 		case <-ctx.Done():
 			// Graceful shutdown when context is cancelled
@@ -110,10 +109,9 @@ func main() {
 	}
 
 	appLogger := logger.NewLogger(logConfig)
-	appContext, cancel := context.WithCancel(context.Background())
-	ctx := logger.WithLogger(appContext, appLogger)
+	ctx := logger.WithLogger(context.Background(), appLogger)
 
-	runErr := run(ctx, cancel)
+	runErr := run(ctx)
 	if runErr != nil {
 		appLogger.ErrorContext(ctx, "home-ip-notifier failed", "error", runErr)
 		os.Exit(1)

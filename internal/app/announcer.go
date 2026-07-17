@@ -31,11 +31,9 @@ func (a Announcer) ProcessMessage(ctx context.Context, message string) error {
 	log.DebugContext(ctx, "Notifying message")
 	err := a.notifier.Notify(ctx, subject, message)
 	if err != nil {
-		errorString := "error during Notify call"
-		log.ErrorContext(ctx, errorString, "error", err)
-		// Status only: the error event is already recorded by the
-		// child span
-		span.SetStatus(codes.Error, errorString)
+		// Status only: the error event and the log are already
+		// recorded closest to the point of error
+		span.SetStatus(codes.Error, "error during Notify call")
 		return err
 	}
 	return nil

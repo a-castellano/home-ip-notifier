@@ -61,11 +61,9 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 	processErr := c.processor.ProcessMessage(ctx, plainMessage)
 
 	if processErr != nil {
-		errorString := "message process has failed"
-		log.ErrorContext(ctx, errorString, "error", processErr)
-		// Status only: the error event is already recorded by the
-		// child span
-		span.SetStatus(codes.Error, errorString)
+		// Status only: the error event and the log are already
+		// recorded closest to the point of error
+		span.SetStatus(codes.Error, "message process has failed")
 		return processErr
 	}
 

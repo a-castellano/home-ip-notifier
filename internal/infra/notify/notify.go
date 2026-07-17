@@ -44,15 +44,7 @@ func (n *MailNotificator) Notify(ctx context.Context, title string, message stri
 		log.ErrorContext(ctx, errorString, "error", newMessageError)
 		return newMessageError
 	}
-	// This log is already emitted by driver
-	//log.DebugContext(ctx, "sending notification", "notification", newMessage)
-
-	notifyError := n.driver.Notify(ctx, newMessage)
-	if notifyError != nil {
-		errorString := "failed to send notification"
-		log.ErrorContext(ctx, errorString, "error", notifyError)
-		return notifyError
-	}
-
-	return nil
+	// Send failures are already logged and recorded by the driver at the
+	// point of error; just propagate.
+	return n.driver.Notify(ctx, newMessage)
 }

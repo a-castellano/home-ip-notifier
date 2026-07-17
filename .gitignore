@@ -25,7 +25,7 @@ cover/*
 coverage.html
 
 main
-./home-ip-notifier
+/home-ip-notifier
 
 
 .vscode/*
