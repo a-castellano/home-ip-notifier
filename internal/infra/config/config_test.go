@@ -150,6 +150,35 @@ func TestConfigWithInvalidRabbitmqConfig(t *testing.T) {
 	}
 }
 
+func TestConfigInvalidDestination(t *testing.T) {
+
+	setUp()
+	defer teardown()
+
+	os.Setenv("SMTP_FROM", "test@example.com")
+	os.Setenv("SMTP_HOST", "test")
+	os.Setenv("SMTP_PORT", "25")
+	os.Setenv("SMTP_USERNAME", "test")
+	os.Setenv("SMTP_PASSWORD", "test")
+	os.Setenv("SMTP_VALIDATE_TLS", "anyvaluedifferentfromtrue")
+
+	os.Setenv("DESTINATION", "invalid")
+	os.Setenv("NOTIFY_QUEUE_NAME", "other_queue")
+
+	ctx := context.Background()
+	_, err := NewConfig(ctx)
+
+	if err == nil {
+		t.Fatalf("TestConfigInvalidDestination should fail.")
+	}
+	expectedError := "mail: missing '@' or angle-addr"
+
+	if err.Error() != expectedError {
+		t.Fatalf("TestConfigInvalidDestination error should be \"%s\" but it was \"%s\".", expectedError, err.Error())
+	}
+
+}
+
 func TestConfig(t *testing.T) {
 
 	setUp()

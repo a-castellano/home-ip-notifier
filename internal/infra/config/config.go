@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"net/mail"
 	"os"
 
 	logger "github.com/a-castellano/go-services/infra/logger"
@@ -35,6 +36,13 @@ func NewConfig(ctx context.Context) (*Config, error) {
 		log.ErrorContext(ctx, "error retrieving destination", "error", ErrMissingDestination)
 		return nil, ErrMissingDestination
 	}
+
+	_, mailErr := mail.ParseAddress(destination)
+	if mailErr != nil {
+		log.ErrorContext(ctx, "cannot validate destination, it should be a valid e-mail", "error", mailErr)
+		return nil, mailErr
+	}
+
 	config.Destination = destination
 	log.DebugContext(ctx, "destination set", "destination", config.Destination)
 
