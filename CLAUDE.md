@@ -2,6 +2,8 @@
 
 ## Formatting
 
+Never use emojis or emoticons, under any circumstances, in any output — documentation, code comments, commit messages, plan notes or conversation — unless the developer explicitly asks for them. This includes pictographic symbols (warning signs, check marks, crosses and similar) used as decoration or as substitutes for words: write the word instead.
+
 Bold may be used to highlight key concepts when it genuinely aids readability — for example, the first mention of an important term or a name being introduced. Do not bold gratuitously: avoid the default LLM habit of bolding whole phrases or every other sentence, and never use bold as a substitute for structure. Prefer `code spans` for identifiers, variable names, types, file names and commands; reserve bold for conceptual emphasis. Use plain prose, headings, lists, and code spans as the primary way to structure content.
 
 ## Code Reviews: Skip Cosmetic Formatting
