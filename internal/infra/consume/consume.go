@@ -75,6 +75,7 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 		span.RecordError(errEmptyBody)
 		span.SetStatus(codes.Error, errEmptyBody.Error())
 		log.ErrorContext(ctx, errEmptyBody.Error())
+		return nil
 	}
 
 	plainMessage := string(receivedEnvelope.Body)
