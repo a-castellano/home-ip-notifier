@@ -5,7 +5,7 @@ package consume
 
 import (
 	"context"
-
+	"errors"
 	logger "github.com/a-castellano/go-services/infra/logger"
 	opentelemetry "github.com/a-castellano/go-services/infra/opentelemetry"
 	envelope "github.com/a-castellano/go-types/types/envelope"
@@ -46,18 +46,14 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 	log.DebugContext(ctx, "unmarshaling envelope from received data")
 
 	receivedEnvelope, unmarshalErr := envelope.Unmarshal(receivedData)
-	if unmarshalErr != nil {
-		log.ErrorContext(ctx, "cannot unmarshal data", "error", unmarshalErr.Error())
-		return nil
+	if unmarshalErr == nil {
+		// Valid envelope: join the producer's trace before starting the span.
+		ctx = opentelemetry.Extract(ctx, receivedEnvelope)
 	}
 
-	if len(receivedEnvelope.Body) == 0 {
-		errorString := "received body is empty"
-		log.ErrorContext(ctx, errorString)
-		return nil
-	}
-
-	ctx = opentelemetry.Extract(ctx, receivedEnvelope)
+	// Started in every path: with a valid envelope it is a child of the
+	// remote context; with a malformed one there is nothing to extract and
+	// it becomes a local root trace.
 	ctx, span := otel.Tracer(tracerName).Start(ctx, "process "+c.queue,
 		trace.WithSpanKind(trace.SpanKindConsumer),
 		trace.WithAttributes(
@@ -65,6 +61,21 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 			attribute.String("messaging.operation.type", "process"),
 		))
 	defer span.End()
+
+	if unmarshalErr != nil {
+		// Deepest (and only) span of this path: event and status here.
+		span.RecordError(unmarshalErr)
+		span.SetStatus(codes.Error, "cannot unmarshal envelope")
+		log.ErrorContext(ctx, "cannot unmarshal data", "error", unmarshalErr.Error())
+		return nil
+	}
+
+	if len(receivedEnvelope.Body) == 0 {
+		errEmptyBody := errors.New("received body is empty")
+		span.RecordError(errEmptyBody)
+		span.SetStatus(codes.Error, errEmptyBody.Error())
+		log.ErrorContext(ctx, errEmptyBody.Error())
+	}
 
 	plainMessage := string(receivedEnvelope.Body)
 
