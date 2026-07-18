@@ -278,7 +278,7 @@ context (`carrier`) and the human-readable message (`body`):
 
 The body is delivered as the email content, under the subject
 `Home IP has changed` (prefixed with the severity by the notificator library,
-e.g. `[Info] - Home IP has changed`). Messages that are not valid envelopes,
+e.g. `[info] - Home IP has changed`). Messages that are not valid envelopes,
 or whose body is empty, are logged at Error level and discarded.
 
 ### Monitoring and Logging
