@@ -5,9 +5,10 @@ version: "3.8"
 services:
   # Go development container with the project code mounted
   golang:
-    image: registry.windmaker.net:5005/a-castellano/limani/base_golang_1_24
+    image: harbor.windmaker.net/limani/base_golang_1_26
     volumes:
       - ..:/app # Mount the project directory into the container
+      - ./.gomodcache:/root/go/pkg/mod # Persist Go module cache locally (dot-prefixed so Go package patterns like ./... never walk into it)
     working_dir: /app
     command: tail -f /dev/null # Keep container running
     networks:
@@ -16,7 +17,7 @@ services:
 
   # RabbitMQ server for message broker testing
   rabbitmq:
-    image: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server
+    image: harbor.windmaker.net/limani/base_rabbitmq_server
     ports:
       - "5672:5672" # AMQP protocol port
       - "15672:15672" # RabbitMQ management interface port
@@ -24,17 +25,18 @@ services:
       home-ip-notifier-net:
         ipv4_address: 172.17.0.30
 
+  # MailHog server (behind stunnel) for SMTP testing
   mailhog:
-    image: registry.windmaker.net:5005/a-castellano/limani/base_mailhog
+    image: harbor.windmaker.net/limani/base_mailhog
     ports:
-      - "6465:6465"
-      - "8025:8025"
+      - "6465:6465" # SMTPS (stunnel) port
+      - "8025:8025" # MailHog web interface port
     environment:
       STUNNEL_SERVICE: smtp-mailhog
       STUNNEL_ACCEPT: 6465
     networks:
       home-ip-notifier-net:
-        ipv4_address: 172.17.0.50
+        ipv4_address: 172.17.0.40
 
 # Custom network configuration for service communication
 networks:
