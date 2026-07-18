@@ -156,12 +156,6 @@ The project provides pre-built packages for Arch Linux. Download the latest pack
 
 All configuration is done through environment variables.
 
-> Note: the SMTP variable names changed when the service moved to the go-types
-> `smtp` config: `MAILFROM`/`MAILDOMAIN` became `SMTP_FROM` (full address),
-> and `SMTPHOST`, `SMTPPORT`, `SMTPNAME`, `SMTPPASSWORD`, `SMTPTLSVALIDATION`
-> became `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`,
-> `SMTP_VALIDATE_TLS`.
-
 #### Required Variables
 
 | Variable      | Description                             | Example               |
