@@ -1,3 +1,7 @@
+// Package config loads the service configuration from environment variables,
+// composing the SMTP and RabbitMQ configs already provided by go-types with
+// the two values that belong to this service: the destination address and the
+// queue to consume from.
 package config
 
 import (
@@ -15,6 +19,9 @@ import (
 // ErrMissingDestination is returned when the DESTINATION env variable is not set.
 var ErrMissingDestination = errors.New("DESTINATION env variable must be set")
 
+// Config holds everything the composition root needs to wire the service:
+// where to consume from (RabbitMQ + queue) and where to deliver to
+// (SMTP + destination address).
 type Config struct {
 	SMTPConfig  *smtpconfig.Config
 	Destination string
@@ -23,6 +30,10 @@ type Config struct {
 	RabbitmqConfig *rabbitmqconfig.Config
 }
 
+// NewConfig reads and validates the environment: DESTINATION must be a valid
+// e-mail address, the SMTP_* and RABBITMQ_* groups are validated by their
+// go-types constructors, and NOTIFY_QUEUE_NAME falls back to
+// "home-ip-monitor-notifications", the monitor's default notification queue.
 func NewConfig(ctx context.Context) (*Config, error) {
 	config := Config{}
 

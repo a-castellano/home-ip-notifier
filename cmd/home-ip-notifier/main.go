@@ -1,3 +1,7 @@
+// home-ip-notifier consumes IP-change notifications published by
+// home-ip-monitor on RabbitMQ and delivers them by e-mail. This package is
+// the composition root: it wires config, adapters and the use case together
+// and owns the process lifecycle.
 package main
 
 import (
@@ -20,6 +24,9 @@ import (
 	notify "github.com/a-castellano/home-ip-notifier/internal/infra/notify"
 )
 
+// run owns the service lifecycle: telemetry setup, config, wiring and the
+// message loop. It blocks until the signal context is cancelled (returns nil)
+// or the broker reports a receive error (returned to main).
 func run(ctx context.Context) error {
 
 	// Graceful shutdown: SIGINT/SIGTERM cancel the context
@@ -100,6 +107,9 @@ func run(ctx context.Context) error {
 
 }
 
+// main only builds the logger and the root context and decides the exit
+// code; everything else happens inside run so its deferred cleanups execute
+// before the process exits (os.Exit here would skip defers placed in main).
 func main() {
 
 	// First, initiate logger
