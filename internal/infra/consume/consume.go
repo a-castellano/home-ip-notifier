@@ -35,11 +35,15 @@ func NewConsumer(queue string, processor Processor) Consumer {
 	return Consumer{processor: processor, queue: queue}
 }
 
-// Consume handles one delivery. Malformed envelopes and empty bodies are
-// logged and dropped (nil is returned): they carry no trace to join and, with
-// auto-ack consumption, failing would not requeue them. For valid envelopes it
-// opens a CONSUMER span as a child of the trace context carried in the
-// envelope and returns whatever the use case returns.
+// Consume handles one delivery. Every path opens a CONSUMER span so failures
+// are visible in the trace backend, not only in logs: a valid envelope joins
+// the producer's trace as a child of the context it carries; a malformed one
+// has no context to extract, so its span is a local root trace marking the
+// poisoned message. An empty body also joins the producer's trace (the
+// envelope itself parsed fine) with the error recorded on the span. Malformed
+// envelopes and empty bodies are then dropped (nil is returned): consumption
+// is auto-ack, so failing would not requeue them. For valid envelopes it
+// returns whatever the use case returns.
 func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 
 	log := logger.FromContext(ctx).With("operation", "consume")
