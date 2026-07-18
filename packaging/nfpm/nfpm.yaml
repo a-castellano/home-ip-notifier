@@ -14,13 +14,13 @@ homepage: "https://git.windmaker.net/a-castellano/home-ip-notifier"
 license: "GPLV3"
 changelog: "changelog.yaml"
 contents:
-  - src: ./home-ip-notifier
+  - src: ../../home-ip-notifier
     dst: /usr/local/bin/windmaker-home-ip-notifier
-  - src: ./packaging/deb/default/windmaker-home-ip-notifier
+  - src: ../deb/default/windmaker-home-ip-notifier
     dst: /etc/default/windmaker-home-ip-notifier-example
-  - src: ./packaging/deb/systemd/windmaker-home-ip-notifier.service
+  - src: ../deb/systemd/windmaker-home-ip-notifier.service
     dst: /usr/lib/systemd/system/windmaker-home-ip-notifier.service
 overrides:
   deb:
     scripts:
-      postinstall: ./packaging/deb/scripts/postinstall.sh
+      postinstall: ../deb/scripts/postinstall.sh
