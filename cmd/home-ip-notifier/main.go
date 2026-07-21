@@ -78,7 +78,7 @@ func run(ctx context.Context) error {
 	log.DebugContext(ctx, "creating announcer")
 	announcer := announce.NewAnnouncer(notificator)
 	log.DebugContext(ctx, "creating consumer")
-	consumer := consume.NewConsumer(appConfig.NotifyQueue, announcer)
+	consumer := consume.NewConsumer(ctx, appConfig.NotifyQueue, announcer)
 
 	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
 

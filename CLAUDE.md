@@ -2,8 +2,6 @@
 
 ## Formatting
 
-Never use emojis or emoticons, under any circumstances, in any output — documentation, code comments, commit messages, plan notes or conversation — unless the developer explicitly asks for them. This includes pictographic symbols (warning signs, check marks, crosses and similar) used as decoration or as substitutes for words: write the word instead.
-
 Bold may be used to highlight key concepts when it genuinely aids readability — for example, the first mention of an important term or a name being introduced. Do not bold gratuitously: avoid the default LLM habit of bolding whole phrases or every other sentence, and never use bold as a substitute for structure. Prefer `code spans` for identifiers, variable names, types, file names and commands; reserve bold for conceptual emphasis. Use plain prose, headings, lists, and code spans as the primary way to structure content.
 
 ## Code Reviews: Skip Cosmetic Formatting
@@ -58,6 +56,20 @@ The Go module cache persists in `development/.gomodcache/` (git-ignored), so dep
 ## Attribution of AI-written tests
 
 Every test that Claude writes (or substantially rewrites) must carry a comment stating it was written by an AI agent, so it is always distinguishable from the tests the developer wrote by hand to learn. Add a line like `// This test was written by an AI agent (Claude).` to the test's doc comment. If Claude only extends a hand-written test, the comment must say which part was AI-written instead of claiming the whole test.
+
+## Log Message Style
+
+This convention applies across all my projects (this file is replicated in each one).
+
+Log messages (the message string passed to the logger, not code comments) follow these rules:
+
+- They start in lowercase, with one exception: when the first word is an acronym or a product/proper name (`ISP name has been set`, `DNS server has been set`, `IPInfo request succeeded`, `Redis config has been set`), it keeps its canonical casing — never decapitalize an acronym.
+- They never end with a period.
+- Acronyms and product names keep their canonical casing anywhere in the message: `DNS`, `HTTP`, `IP`, `ISP`, `Redis`, `RabbitMQ`, `IPInfo`. Names that refer to this project's own packages (`ipinfo`, `nslookup`, `messagebroker`, `memorydatabase`) stay lowercase, since they name the package, not a product.
+
+Strings that are not log messages — notification payloads sent to queues, error strings for `errors.New`/`fmt.Errorf` (which follow the Go convention: lowercase, no period) — are out of scope of the first rule's exception list but must not be confused with logs when auditing.
+
+When auditing code, flag log messages that deviate from these rules.
 
 ## OpenTelemetry: Span Error Recording Policy
 
