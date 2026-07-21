@@ -61,6 +61,7 @@ func NewConsumer(ctx context.Context, queue string, processor Processor) Consume
 		"homeipnotifier.message.processing.duration",
 		metric.WithDescription("Duration of the message processing"),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if processDurationErr != nil {
 		log.ErrorContext(ctx, "cannot register homeipnotifier.message.processing.duration otel meter", "error", processDurationErr)
