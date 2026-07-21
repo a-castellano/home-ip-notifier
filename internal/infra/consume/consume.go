@@ -34,7 +34,12 @@ type Consumer struct {
 	processDuration  metric.Float64Histogram
 }
 
-// NewConsumer returns a Consumer for queue that delegates to processor.
+// NewConsumer returns a Consumer for queue that delegates to processor. It
+// also creates the Consumer's metric instruments against the global
+// MeterProvider; the context is only used to reach the logger during
+// construction, it is not stored. A failed instrument registration is logged
+// and otherwise ignored — the returned instrument is usable anyway, and
+// telemetry must never prevent the consumer from being built.
 func NewConsumer(ctx context.Context, queue string, processor Processor) Consumer {
 
 	log := logger.FromContext(ctx).With("operation", "NewConsumer")
@@ -73,12 +78,23 @@ func NewConsumer(ctx context.Context, queue string, processor Processor) Consume
 // envelopes and empty bodies are then dropped (nil is returned): consumption
 // is auto-ack, so failing would not requeue them. For valid envelopes it
 // returns whatever the use case returns.
+//
+// Every delivery — dropped and failed ones included — is also counted once
+// and its handling duration recorded once, both tagged with an outcome
+// attribute (success, malformed, empty or error), so error rates can be
+// derived from the counter.
 func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 
 	start := time.Now()
 
 	outcome := "success"
 
+	// The closure is required: a plain deferred call would evaluate its
+	// arguments right here, freezing time.Since at ~0 and outcome at
+	// "success" instead of the value the exit path decides. It reads the ctx
+	// reassigned by Start below, so both exemplars link to this delivery's
+	// CONSUMER span — the SpanContext survives span.End, which runs first
+	// (LIFO). Renaming the span's ctx would silently break that link.
 	defer func() {
 		outcomeAttribute := metric.WithAttributes(attribute.String("outcome", outcome))
 
