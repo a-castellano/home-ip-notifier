@@ -12,10 +12,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+	"time"
 )
 
-const tracerName = "github.com/a-castellano/home-ip-notifier/internal/infra/consume"
+const componentName = "github.com/a-castellano/home-ip-notifier/internal/infra/consume"
 
 // Processor is what the consumer needs from the use case; app.Announcer
 // satisfies it. The interface is declared here, where it is consumed (Go
@@ -26,13 +28,40 @@ type Processor interface {
 
 // Consumer turns the raw deliveries of one queue into use-case calls.
 type Consumer struct {
-	processor Processor
-	queue     string
+	processor        Processor
+	queue            string
+	consumedMessages metric.Int64Counter
+	processDuration  metric.Float64Histogram
 }
 
 // NewConsumer returns a Consumer for queue that delegates to processor.
-func NewConsumer(queue string, processor Processor) Consumer {
-	return Consumer{processor: processor, queue: queue}
+func NewConsumer(ctx context.Context, queue string, processor Processor) Consumer {
+
+	log := logger.FromContext(ctx).With("operation", "NewConsumer")
+	log.DebugContext(ctx, "creating new consumer")
+
+	otelMeter := otel.Meter(componentName)
+
+	// define metrics
+	consumedMessages, consumedMessagesErr := otelMeter.Int64Counter(
+		"homeipnotifier.messages.consumed",
+		metric.WithDescription("Number of consumed messages"),
+		metric.WithUnit("{message}"),
+	)
+	if consumedMessagesErr != nil {
+		log.ErrorContext(ctx, "cannot register homeipnotifier.messages.consumed otel meter", "error", consumedMessagesErr)
+	}
+
+	processDuration, processDurationErr := otelMeter.Float64Histogram(
+		"homeipnotifier.message.processing.duration",
+		metric.WithDescription("Duration of the message processing"),
+		metric.WithUnit("s"),
+	)
+	if processDurationErr != nil {
+		log.ErrorContext(ctx, "cannot register homeipnotifier.message.processing.duration otel meter", "error", processDurationErr)
+	}
+
+	return Consumer{processor: processor, queue: queue, consumedMessages: consumedMessages, processDuration: processDuration}
 }
 
 // Consume handles one delivery. Every path opens a CONSUMER span so failures
@@ -46,7 +75,19 @@ func NewConsumer(queue string, processor Processor) Consumer {
 // returns whatever the use case returns.
 func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 
+	start := time.Now()
+
+	outcome := "success"
+
+	defer func() {
+		outcomeAttribute := metric.WithAttributes(attribute.String("outcome", outcome))
+
+		c.consumedMessages.Add(ctx, 1, outcomeAttribute)
+		c.processDuration.Record(ctx, time.Since(start).Seconds(), outcomeAttribute)
+	}()
+
 	log := logger.FromContext(ctx).With("operation", "consume")
+
 	log.DebugContext(ctx, "unmarshaling envelope from received data")
 
 	receivedEnvelope, unmarshalErr := envelope.Unmarshal(receivedData)
@@ -58,7 +99,7 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 	// Started in every path: with a valid envelope it is a child of the
 	// remote context; with a malformed one there is nothing to extract and
 	// it becomes a local root trace.
-	ctx, span := otel.Tracer(tracerName).Start(ctx, "process "+c.queue,
+	ctx, span := otel.Tracer(componentName).Start(ctx, "process "+c.queue,
 		trace.WithSpanKind(trace.SpanKindConsumer),
 		trace.WithAttributes(
 			attribute.String("messaging.destination.name", c.queue),
@@ -71,6 +112,7 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 		span.RecordError(unmarshalErr)
 		span.SetStatus(codes.Error, "cannot unmarshal envelope")
 		log.ErrorContext(ctx, "cannot unmarshal data", "error", unmarshalErr.Error())
+		outcome = "malformed"
 		return nil
 	}
 
@@ -79,6 +121,7 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 		span.RecordError(errEmptyBody)
 		span.SetStatus(codes.Error, errEmptyBody.Error())
 		log.ErrorContext(ctx, errEmptyBody.Error())
+		outcome = "empty"
 		return nil
 	}
 
@@ -92,6 +135,7 @@ func (c Consumer) Consume(ctx context.Context, receivedData []byte) error {
 		// Status only: the error event and the log are already
 		// recorded closest to the point of error
 		span.SetStatus(codes.Error, "message process has failed")
+		outcome = "error"
 		return processErr
 	}
 

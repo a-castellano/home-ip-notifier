@@ -23,7 +23,7 @@ func (m mockProcessor) ProcessMessage(ctx context.Context, message string) error
 func TestEmptyData(t *testing.T) {
 
 	ctx := context.Background()
-	consumer := NewConsumer("testqueue", mockProcessor{})
+	consumer := NewConsumer(ctx, "testqueue", mockProcessor{})
 
 	emptydata := make([]byte, 0)
 
@@ -38,7 +38,7 @@ func TestEmptyData(t *testing.T) {
 func TestEmptyBody(t *testing.T) {
 
 	ctx := context.Background()
-	consumer := NewConsumer("testqueue", mockProcessor{})
+	consumer := NewConsumer(ctx, "testqueue", mockProcessor{})
 	emptybody := make([]byte, 0)
 	carrier := map[string]string{"testkey": "testValue"}
 
@@ -55,7 +55,7 @@ func TestEmptyBody(t *testing.T) {
 func TestValidEnvelopeConsumerFails(t *testing.T) {
 
 	ctx := context.Background()
-	consumer := NewConsumer("testqueue", mockProcessor{fail: true})
+	consumer := NewConsumer(ctx, "testqueue", mockProcessor{fail: true})
 
 	body := []byte("123.123.123.123")
 	carrier := map[string]string{"traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"}
@@ -78,7 +78,7 @@ func TestValidEnvelopeConsumerFails(t *testing.T) {
 func TestValidEnvelopeConsumer(t *testing.T) {
 
 	ctx := context.Background()
-	consumer := NewConsumer("testqueue", mockProcessor{})
+	consumer := NewConsumer(ctx, "testqueue", mockProcessor{})
 
 	body := []byte("123.123.123.123")
 	carrier := map[string]string{"traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"}
