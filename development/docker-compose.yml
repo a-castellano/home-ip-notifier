@@ -38,6 +38,15 @@ services:
       home-ip-notifier-net:
         ipv4_address: 172.17.0.40
 
+  # otelcollector server for opentelemetry testing
+  otelcollector:
+    image: harbor.windmaker.net/limani/base_otelcol
+    ports:
+      - "55679:55679"
+    networks:
+      home-ip-notifier-net:
+        ipv4_address: 172.17.0.60
+
 # Custom network configuration for service communication
 networks:
   home-ip-notifier-net:
