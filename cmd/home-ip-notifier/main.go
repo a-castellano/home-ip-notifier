@@ -118,7 +118,7 @@ func main() {
 		systemlog.Fatal(err)
 	}
 
-	appLogger := logger.NewLogger(logConfig)
+	appLogger := logger.NewLogger(logConfig, opentelemetry.NewSlogHandler(logConfig.AppName))
 	ctx := logger.WithLogger(context.Background(), appLogger)
 
 	runErr := run(ctx)
