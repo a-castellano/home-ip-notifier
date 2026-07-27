@@ -78,7 +78,7 @@ func run(ctx context.Context) error {
 	log.DebugContext(ctx, "creating announcer")
 	announcer := announce.NewAnnouncer(notificator)
 	log.DebugContext(ctx, "creating consumer")
-	consumer := consume.NewConsumer(appConfig.NotifyQueue, announcer)
+	consumer := consume.NewConsumer(ctx, appConfig.NotifyQueue, announcer)
 
 	go messageBroker.ReceiveMessages(ctx, appConfig.NotifyQueue, messagesReceived, receiveErrors)
 
@@ -118,7 +118,7 @@ func main() {
 		systemlog.Fatal(err)
 	}
 
-	appLogger := logger.NewLogger(logConfig)
+	appLogger := logger.NewLogger(logConfig, opentelemetry.NewSlogHandler(logConfig.AppName))
 	ctx := logger.WithLogger(context.Background(), appLogger)
 
 	runErr := run(ctx)

@@ -183,9 +183,10 @@ Logging is handled through [go-types `slog`](https://git.windmaker.net/a-castell
 
 OpenTelemetry is opt-in through [go-types `opentelemetry`](https://git.windmaker.net/a-castellano/go-types/-/tree/master/opentelemetry). `APP_NAME` doubles as the telemetry `service.name`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` must **not** be set — the config rejects them.
 
-| Variable           | Description                                | Default |
-| ------------------ | ------------------------------------------ | ------- |
-| `ENABLE_TELEMETRY` | Enable tracing: only `true` or `false`     | `false` |
+| Variable                      | Description                                                                                    | Default             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------- |
+| `ENABLE_TELEMETRY`            | Enables traces and metrics when set to `"true"` (opt-in)                                       | `false`              |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint (`http://` or `https://`); when unset, traces/metrics export to stdout | _(unset → stdout)_   |
 
 #### SMTP Configuration
 
@@ -231,6 +232,10 @@ DESTINATION="admin@example.com"
 
 # Queue configuration
 NOTIFY_QUEUE_NAME="home-ip-monitor-notifications"
+
+# Telemetry (opt-in)
+ENABLE_TELEMETRY="false"
+# OTEL_EXPORTER_OTLP_ENDPOINT="http://otelcollector:4317"
 
 # SMTP configuration
 SMTP_FROM="no-reply@example.com"
@@ -294,6 +299,19 @@ The service uses structured logging through [`log/slog`](https://pkg.go.dev/log/
 Each entry carries an `operation` attribute (e.g. `NewConfig`, `consume`,
 `main.run`) plus structured fields. With telemetry enabled, delivery failures
 also show up as failed spans in the trace the monitor started.
+
+The service also records the following metrics:
+
+| Metric                                        | Type      | Unit        | Description                        |
+| --------------------------------------------- | --------- | ----------- | ---------------------------------- |
+| `homeipnotifier.messages.consumed`            | Counter   | `{message}` | Number of consumed messages        |
+| `homeipnotifier.message.processing.duration`  | Histogram | `s`         | Duration of the message processing |
+
+Both metrics carry an `outcome` attribute (`success`, `malformed`, `empty` or
+`error`), so every delivery is measured — dropped and failed messages included
+— and error rates can be derived from the counter. Traces and metrics are
+currently exported to standard output; metric data points carry exemplars
+linking them to the CONSUMER span of the delivery that produced them.
 
 ## Development
 
