@@ -5,17 +5,28 @@
 # https://git.windmaker.net/a-castellano/home-ip-notifier
 #
 
+# Application and logging
+APP_NAME="home-ip-notifier"
+SLOG_LEVEL="Info"
+SLOG_FORMAT="JSON"
+
+# Required configuration
+DESTINATION="alvaro.castellano.vela@gmail.com"
+
+# Queue configuration
 NOTIFY_QUEUE_NAME="home-ip-monitor-notifications"
 
-# Mail config
+# Telemetry (opt-in)
+ENABLE_TELEMETRY="false"
+# OTEL_EXPORTER_OTLP_ENDPOINT="http://otelcollector:4317"
 
-MAILFROM="no-reply"
-MAILDOMAIN="example.net"
-SMTPHOST="email-smtp.eu-west-1.amazonaws.com"
-SMTPPORT="465"
-SMTPNAME="name"
-SMTPPASSWORD="pass"
-DESTINATION="alvaro.castellano.vela@gmail.com"
+# SMTP configuration
+SMTP_FROM="no-reply@example.net"
+SMTP_HOST="email-smtp.eu-west-1.amazonaws.com"
+SMTP_PORT=465
+SMTP_USERNAME="name"
+SMTP_PASSWORD="pass"
+SMTP_VALIDATE_TLS="true"
 
 # RabbitMQ config
 

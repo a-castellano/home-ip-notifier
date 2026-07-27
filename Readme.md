@@ -183,9 +183,10 @@ Logging is handled through [go-types `slog`](https://git.windmaker.net/a-castell
 
 OpenTelemetry is opt-in through [go-types `opentelemetry`](https://git.windmaker.net/a-castellano/go-types/-/tree/master/opentelemetry). `APP_NAME` doubles as the telemetry `service.name`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` must **not** be set — the config rejects them.
 
-| Variable           | Description                                              | Default |
-| ------------------ | -------------------------------------------------------- | ------- |
-| `ENABLE_TELEMETRY` | Enables traces and metrics when set to `"true"` (opt-in) | `false` |
+| Variable                      | Description                                                                                    | Default             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------- |
+| `ENABLE_TELEMETRY`            | Enables traces and metrics when set to `"true"` (opt-in)                                       | `false`              |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint (`http://` or `https://`); when unset, traces/metrics export to stdout | _(unset → stdout)_   |
 
 #### SMTP Configuration
 
@@ -231,6 +232,10 @@ DESTINATION="admin@example.com"
 
 # Queue configuration
 NOTIFY_QUEUE_NAME="home-ip-monitor-notifications"
+
+# Telemetry (opt-in)
+ENABLE_TELEMETRY="false"
+# OTEL_EXPORTER_OTLP_ENDPOINT="http://otelcollector:4317"
 
 # SMTP configuration
 SMTP_FROM="no-reply@example.com"
